@@ -4,9 +4,61 @@
 calls against security policies before allowing them to reach sandboxed mock
 tools, then records the decision in a signed audit ledger.
 
+**AI agents don't just answer questions anymore — they send email, run SQL and
+edit your CRM. One poisoned invoice can steer them into leaking payroll data.
+TrustTrace sits at the execution boundary: every proposed tool call is
+inspected *before* it runs, and every verdict is written to a tamper-evident,
+signed ledger.**
+
+| 8 scenarios | 5/5 attacks stopped | 0/3 benign blocked | ~1 ms policy latency (p50) |
+|---|---|---|---|
+
+Measured with `POST /v1/simulate/run-all` on the bundled deterministic
+scenarios; see [Benchmark](#benchmark) for what that does and does not show.
+
 > **Prototype notice:** This project is for local demonstration, not production
 > security or certified compliance. Reports provide evidence aligned with SOC 2
 > / AIUC-1 concepts; they do not prove certification or compliance.
+
+![TrustTrace dashboard](docs/dashboard.png)
+
+## The problem
+
+Prompt injection hides in documents, tickets and web pages that an agent reads.
+The model may be fooled, but the damage happens when it calls a **tool**.
+Filtering the prompt is not enough: the dangerous input is often in retrieved
+context, not in the tool arguments. TrustTrace therefore checks the proposed
+call *and* the untrusted sources that influenced it.
+
+## How it works
+
+```text
+ Agent / LLM ──► proposed tool call (+ context sources)
+                         │
+                 ┌───────▼────────┐
+                 │ L0 Strict schema│  unknown tools / extra fields → BLOCK
+                 └───────┬────────┘
+                 ┌───────▼────────┐
+                 │ L1/L2 Policy    │  domains, sensitive data, SQL, CRM bulk,
+                 │ engine (YAML)   │  injection in untrusted context
+                 └───────┬────────┘
+                 ┌───────▼────────┐
+                 │ L3 Gemini judge │  optional; can only make a verdict stricter
+                 └───────┬────────┘
+              ALLOW ◄────┼────► REVIEW / BLOCK  (never reaches a tool)
+                 │       │
+        sandbox mock     ▼
+            tool     Signed audit ledger (SHA-256 chain + Ed25519)
+```
+
+| Risk score | Decision | Effect |
+|---|---|---|
+| below 0.4 | `ALLOW` | Runs against the sandbox mock only |
+| 0.4 to below 0.7 | `REVIEW` | Held for a human; not executed |
+| 0.7 or above | `BLOCK` | Never executed |
+
+Deterministic BLOCKs cannot be overridden by the judge. If the judge is
+enabled and fails, the call is blocked (fail closed).
 
 ## Run it
 
@@ -77,16 +129,16 @@ the frontend; see [`frontend/.env.example`](frontend/.env.example).
 
 Included scenarios:
 
-| Scenario | Expected result | What it demonstrates |
+| Scenario (API id) | Expected result | What it demonstrates |
 |---|---|---|
-| Invoice Exfiltration | BLOCK | Untrusted invoice context proposes sending payroll-related data externally |
-| SQL Destruction via Support Ticket | BLOCK | A destructive SQL statement is intercepted |
-| CRM Mass Tampering | REVIEW | A bulk CRM change exceeds the review threshold |
-| URL Exfiltration | BLOCK | An unapproved destination and sensitive-data indicator |
-| Injection in Retrieved Context | BLOCK | An instruction in untrusted source context is flagged |
-| Safe Internal Email | ALLOW | Email to an approved internal domain |
-| Safe SQL Read | ALLOW | A read from the mock customer table |
-| Single CRM Note Update | ALLOW | A single-record mock update |
+| Invoice Exfiltration (`invoice-exfiltration`) | BLOCK | Untrusted invoice context proposes sending payroll-related data externally |
+| SQL Destruction via Support Ticket (`sql-destruction`) | BLOCK | A destructive SQL statement is intercepted |
+| CRM Mass Tampering (`crm-mass-tampering`) | REVIEW | A bulk CRM change exceeds the review threshold |
+| URL Exfiltration (`url-exfiltration`) | BLOCK | An unapproved destination and sensitive-data indicator |
+| Injection in Retrieved Context (`obfuscated-injection`) | BLOCK | An instruction in untrusted source context is flagged |
+| Safe Internal Email (`safe-internal-email`) | ALLOW | Email to an approved internal domain |
+| Safe SQL Read (`safe-sql-read`) | ALLOW | A read from the mock customer table |
+| Single CRM Note Update (`safe-crm-note`) | ALLOW | A single-record mock update |
 
 These are deterministic replays, not live LLM-agent runs. Repeated runs append
 more records to the audit ledger.
@@ -94,13 +146,16 @@ more records to the audit ledger.
 ## Use the API
 
 Interactive request/response examples are available at
-<http://localhost:8000/docs>. Common endpoints:
+<http://localhost:8000/docs>.
+
+![API docs](docs/api-docs.png)
+ Common endpoints:
 
 | Method and path | Purpose |
 |---|---|
 | `GET /health` | Check API and layer status |
 | `GET /v1/scenarios` | List the demo scenarios |
-| `POST /simulate/{scenario_id}` | Replay one scenario and record its verdict |
+| `POST` or `GET /simulate/{scenario_id}` | Replay one scenario and record its verdict |
 | `POST /v1/simulate/run-all` | Replay all scenarios and return a scorecard |
 | `POST /v1/intercept` | Validate and inspect a tool call without executing it |
 | `POST /v1/execute` | Inspect a tool call; execute a sandbox mock only on ALLOW |
@@ -168,13 +223,58 @@ cannot be independently verified if the private key is lost.
   a real external action.
 - Policy and prompt-injection checks are deterministic heuristics; they can miss
   attacks or flag benign activity. Do not connect real tools or sensitive data.
--   The Gemini judge and NVIDIA NeMo Guardrails are disabled by default. Scenario
+- NVIDIA NeMo Guardrails is **not implemented** (planned). The Gemini judge is
+  disabled by default. Scenario
   replays remain deterministic and do not call a hosted model. You can optionally
   enable Gemini judging for `/v1/intercept` and `/v1/execute` requests; when
   enabled, those tool-call arguments and context excerpts are sent to Google's
   Gemini API. Do not send sensitive or confidential data.
 - SSE streaming, PDF reports, and production-grade isolation are not
   implemented.
+
+## Benchmark
+
+`python backend/benchmark.py` compares TrustTrace with a naive keyword
+denylist (the usual first attempt) on the same eight scenarios:
+
+| | Attacks caught | Exact decision | Benign false positives |
+|---|---|---|---|
+| Keyword filter | 1 / 5 | 4 / 8 | 0 / 3 |
+| **TrustTrace** | **5 / 5** | **8 / 8** | **0 / 3** |
+
+The keyword filter misses attacks hidden in *retrieved context* or in an
+unapproved destination, and cannot return `REVIEW` for bulk changes. Caveat:
+the scenarios are the team's own, so this is a regression check, not proof of
+general detection. Adversarial evasion is the main known gap (for example leetspeak such as
+"1gn0re previous instructi0ns" is not caught by the regex rules; it is tracked
+as an expected-failure test) and the reason the optional model judge exists.
+
+## Run the tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
+```
+
+22 tests (plus 1 documented expected failure) cover the policy engine, evasion and path-traversal cases, ledger integrity and tamper detection, and
+the Gemini judge (mocked; no network or key needed).
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Port 3000 or 8000 already in use | Stop the other process, or change the host port in `docker-compose.yml` |
+| Dashboard shows the API as offline | Check <http://localhost:8000/health>; for a custom backend URL rebuild the frontend with `NEXT_PUBLIC_API_URL` |
+| `layers.llm_judge` is not `ready` | Set `TRUSTTRACE_JUDGE_PROVIDER=gemini` and `GEMINI_API_KEY` in `.env`, then recreate the backend |
+| **Verify chain** fails after deleting the key | Signatures need the original key; reset with `docker compose down --volumes` |
+| Counters are not zero | The ledger persists; reset it as above |
+
+## Roadmap
+
+Live agent integration (LangChain / MCP proxy), NeMo Guardrails, SSE trace
+streaming, PDF evidence reports, a human approval queue for `REVIEW`, and
+per-tenant policies.
 
 ## Optional Gemini judge
 
@@ -214,8 +314,15 @@ incur API charges. The model's opinion is not a security guarantee.
 
 - [Backend setup and development](backend/README.md)
 - [Dashboard setup](frontend/README.md)
+- [3-minute demo video script](script.md)
+- [Pitch deck outline](PITCH.md)
+- [Project site](docs/index.html) (GitHub Pages: set Pages source to `/docs`)
 - [Durable project context](CONTEXT.md)
 - [Session handoff for future contributors/LLMs](SESSION.md)
 
 Team: Haseeb Khan (ML Engineer), Abu Baker (Frontend Developer), and Luqman Khan
 (ML Engineer).
+
+## License
+
+MIT; see [LICENSE](LICENSE).

@@ -10,6 +10,7 @@
 - Open the dashboard and wait for both services to be healthy.
 - Use a fresh audit ledger if you want the counters to start at zero.
 - Close unrelated windows and keep the dashboard/browser zoom readable.
+- Optional: run `python backend/benchmark.py` in a second window for the baseline comparison.
 - The demo uses deterministic scenario replays and sandboxed mock tools. It does
   not use a live LLM, send email, or make external HTTP requests.
 
@@ -50,7 +51,7 @@ indicator and the unapproved destination, and blocks the call before any mock
 tool runs. The finding also points back to the invoice that contained the
 instruction.”
 
-### 1:35–2:05 — Benign controls and full suite
+### 1:35–2:05 — Benign controls, full suite and baseline
 
 **On screen:** Run **Safe Internal Email**, then select **Run full suite**. Show
 the scorecard results.
@@ -60,7 +61,9 @@ the scorecard results.
 domain, so the policy allows it in the sandbox. The full suite replays attack
 and benign examples and compares each result with its expected decision. These
 numbers describe only the included deterministic scenarios; they are not a
-general security guarantee.”
+general security guarantee. For comparison, a naive keyword filter catches one
+of the five attacks on these same scenarios; TrustTrace catches all five and
+adds a REVIEW tier for bulk changes.”
 
 ### 2:05–2:40 — Audit evidence
 
@@ -79,8 +82,9 @@ control concepts; it is not a certification or compliance claim.”
 **Narration:**
 “TrustTrace is an early, offline-first prototype of an AI-agent firewall:
 inspect tool calls, apply policy before execution, and keep a verifiable record
-of decisions. Live Nemotron judging and NeMo Guardrails are planned next. For
-now, the demo is deterministic, local, and safe to explore.”
+of decisions. An optional Gemini judge can only make a verdict stricter, and NeMo Guardrails
+is on the roadmap. For now, the demo is deterministic, local, and safe to
+explore. One command starts it: docker compose up.”
 
 ## Recording notes
 

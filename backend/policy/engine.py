@@ -273,6 +273,19 @@ class PolicyEngine:
                     )
                 )
 
+        if call.tool_name == "read_file":
+            path = str(arguments["path"]).replace("\\", "/")
+            if path.startswith("/") or ".." in path.split("/"):
+                risk = 1.0
+                findings.append(
+                    Finding(
+                        rule_id="path_traversal",
+                        severity="CRITICAL",
+                        message="File path escapes the allowed demo directory.",
+                        evidence=path,
+                    )
+                )
+
         injection_patterns = rules["injection_patterns"]
         for source in call.context_sources:
             if any(

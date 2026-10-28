@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TrustTrace AI</title>
+<meta name="description" content="The AI agent firewall and auditor: inspect every tool call before it runs.">
+<style>
+:root{--bg:#0b1020;--fg:#e8ecf5;--mut:#9aa6c4;--card:#141b34;--ok:#3ddc97;--rev:#ffb454;--bad:#ff5d6c;--acc:#6ea8ff}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fc;--fg:#14192b;--mut:#4d5774;--card:#fff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:48px 16px}
+h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.1;margin:.2em 0}h2{margin-top:2.4em}
+.mut{color:var(--mut)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.card{background:var(--card);border-radius:12px;padding:16px;border:1px solid #8884}
+.n{font-size:2rem;font-weight:700;color:var(--acc)}
+table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #8884;text-align:left}
+.ALLOW{color:var(--ok)}.REVIEW{color:var(--rev)}.BLOCK{color:var(--bad)}
+pre{background:var(--card);padding:16px;border-radius:12px;overflow:auto}a{color:var(--acc)}
+</style></head><body><main>
+<p class="mut">AI Agent Firewall &amp; Auditor</p>
+<h1>This invoice just told your agent to email payroll.</h1>
+<p>TrustTrace inspects every proposed tool call, and the untrusted sources behind it, <em>before</em> it runs. Each verdict goes into a signed, tamper-evident ledger.</p>
+<p><a href="https://github.com/Haseebi-khan/TrustTrace-AI">Source on GitHub</a> · <a href="https://github.com/Haseebi-khan/TrustTrace-AI#readme">README</a> · <a href="https://github.com/Haseebi-khan/TrustTrace-AI/blob/main/PITCH.md">Pitch outline</a></p>
+
+<img src="dashboard.png" alt="TrustTrace dashboard" style="width:100%;border-radius:12px;margin-top:16px">
+
+<h2>Results</h2>
+<div class="grid">
+<div class="card"><div class="n">5/5</div>attacks stopped</div>
+<div class="card"><div class="n">0/3</div>benign calls blocked</div>
+<div class="card"><div class="n">~1 ms</div>p50 policy latency</div>
+<div class="card"><div class="n">8</div>deterministic scenarios</div></div>
+
+<h2>How it works</h2>
+<pre>agent → proposed tool call (+ context sources)
+      → L0 strict schema
+      → L1/L2 policy engine (YAML)
+      → L3 Gemini judge (optional, can only tighten)
+      → ALLOW | REVIEW | BLOCK
+      → signed ledger (SHA-256 chain + Ed25519)</pre>
+
+<h2>Benchmark vs keyword filter</h2>
+<table><tr><th></th><th>Attacks caught</th><th>Exact decision</th><th>False positives</th></tr>
+<tr><td>Keyword filter</td><td>1 / 5</td><td>4 / 8</td><td>0 / 3</td></tr>
+<tr><td><b>TrustTrace</b></td><td><b>5 / 5</b></td><td><b>8 / 8</b></td><td>0 / 3</td></tr></table>
+<p class="mut">Team-authored scenarios: a regression check, not proof of general detection.</p>
+
+<h2>Scenarios</h2>
+<table><tr><th>Scenario</th><th>Decision</th></tr>
+<tr><td>Invoice exfiltration</td><td class="BLOCK">BLOCK</td></tr>
+<tr><td>SQL destruction via support ticket</td><td class="BLOCK">BLOCK</td></tr>
+<tr><td>CRM mass tampering</td><td class="REVIEW">REVIEW</td></tr>
+<tr><td>URL exfiltration</td><td class="BLOCK">BLOCK</td></tr>
+<tr><td>Injection in retrieved context</td><td class="BLOCK">BLOCK</td></tr>
+<tr><td>Safe internal email / SQL read / CRM note</td><td class="ALLOW">ALLOW</td></tr></table>
+
+<h2>Try it</h2>
+<pre>docker compose up --build
+# dashboard http://localhost:3000   API docs http://localhost:8000/docs</pre>
+
+<h2>Honest limits</h2>
+<p>Prototype with synthetic data and sandbox mocks only. Heuristic checks can be evaded or over-trigger. Reports are evidence aligned with SOC 2 / AIUC-1 concepts, not a certification. NeMo Guardrails is not implemented.</p>
+<p class="mut">Team: Haseeb Khan, Abu Baker, Luqman Khan.</p>
+</main></body></html>
