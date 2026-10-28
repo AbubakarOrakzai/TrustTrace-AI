@@ -57,7 +57,22 @@ type Scorecard = {
   results: Array<{ scenario_id: string; expected: string; actual: string; matched: boolean }>;
 };
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "production"
+    ? "https://trust-trace-ai.vercel.app"
+    : "http://localhost:8000");
+
+function backendUnavailableMessage() {
+  const isLocal =
+    typeof window !== "undefined" &&
+    ["localhost", "127.0.0.1"].includes(window.location.hostname);
+  if (isLocal) {
+    return "Backend unavailable. Start FastAPI at http://localhost:8000.";
+  }
+  const origin = typeof window === "undefined" ? "this site" : window.location.origin;
+  return `Backend unavailable. Set NEXT_PUBLIC_API_URL to your public FastAPI URL and allow ${origin} in backend CORS settings.`;
+}
 
 export default function Dashboard() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -88,7 +103,7 @@ export default function Dashboard() {
       setMessage("");
     } catch {
       setApiHealth(null);
-      setMessage("Backend unavailable. Start FastAPI at http://localhost:8000.");
+      setMessage(backendUnavailableMessage());
     }
   }, []);
 

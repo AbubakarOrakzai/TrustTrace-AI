@@ -18,6 +18,23 @@ def test_scenario_expected_decisions() -> None:
         assert result.decision == scenario["expected_decision"], scenario_id
 
 
+def test_vercel_defaults_writable_state_to_tmp(monkeypatch) -> None:
+    monkeypatch.setenv("VERCEL", "1")
+    from runtime_config import default_data_path
+
+    assert default_data_path("trusttrace.db", Path("/backend")) == Path(
+        "/tmp/trusttrace.db"
+    )
+
+
+def test_vercel_defaults_cors_to_deployed_dashboard(monkeypatch) -> None:
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.delenv("TRUSTTRACE_CORS_ORIGINS", raising=False)
+    from runtime_config import default_cors_origins
+
+    assert default_cors_origins() == ["https://trust-trace-ai-jj13.vercel.app"]
+
+
 def test_unapproved_destination_with_sensitive_data_is_blocked() -> None:
     call = ToolCall(
         tool_name="send_email",

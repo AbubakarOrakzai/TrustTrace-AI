@@ -33,15 +33,27 @@ from models.schemas import (
     Verdict,
 )
 from policy.engine import PolicyEngine, load_rules
+from runtime_config import default_cors_origins, default_data_path
 from scenarios import SCENARIOS, make_tool_call
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("trusttrace")
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR.parent / ".env")
+
 ledger = AuditLedger(
-    Path(os.getenv("TRUSTTRACE_DB_PATH", BASE_DIR / "trusttrace.db")),
-    Path(os.getenv("TRUSTTRACE_KEY_PATH", BASE_DIR / ".trusttrace-signing-key.pem")),
+    Path(
+        os.getenv(
+            "TRUSTTRACE_DB_PATH",
+            default_data_path("trusttrace.db", BASE_DIR),
+        )
+    ),
+    Path(
+        os.getenv(
+            "TRUSTTRACE_KEY_PATH",
+            default_data_path(".trusttrace-signing-key.pem", BASE_DIR),
+        )
+    ),
 )
 policy_engine = PolicyEngine()
 mock_tools = MockTools()
@@ -219,9 +231,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="TrustTrace AI", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("TRUSTTRACE_CORS_ORIGINS", "http://localhost:3000").split(
-        ","
-    ),
+    allow_origins=default_cors_origins(),
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
