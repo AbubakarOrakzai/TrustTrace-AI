@@ -10,7 +10,7 @@
 - Open the dashboard and wait for both services to be healthy.
 - Use a fresh audit ledger if you want the counters to start at zero.
 - Close unrelated windows and keep the dashboard/browser zoom readable.
-- Optional: run `python backend/benchmark.py` in a second window for the baseline comparison.
+- Optional: run `pytest` and `python backend/benchmark.py` in a second window for the baseline comparison.
 - The demo uses deterministic scenario replays and sandboxed mock tools. It does
   not use a live LLM, send email, or make external HTTP requests.
 
@@ -64,6 +64,16 @@ numbers describe only the included deterministic scenarios; they are not a
 general security guarantee. For comparison, a naive keyword filter catches one
 of the five attacks on these same scenarios; TrustTrace catches all five and
 adds a REVIEW tier for bulk changes.”
+
+### Optional insert (+15 s) — Tested against evasion
+
+**On screen:** Show `pytest` output: 22 passed, 1 xfailed.
+
+**Narration:**
+“We also attacked our own rules. Obfuscated SQL, look-alike domains and path
+traversal are all blocked, and testing found a real gap, which we fixed.
+One known miss remains: leetspeak injection. We keep it as a tracked failing
+test, and the optional model judge targets that class.”
 
 ### 2:05–2:40 — Audit evidence
 
