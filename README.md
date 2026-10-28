@@ -279,19 +279,18 @@ tools are `send_email`, `query_db`, `update_crm`, `read_file`, and
 ## Deploy frontend and backend on Vercel
 
 For separate Vercel projects, set the backend project's Root Directory to
-`backend`. In its Environment Variables, set
-`TRUSTTRACE_CORS_ORIGINS` to the exact frontend origin (for example,
-`https://your-dashboard.vercel.app`). Set the frontend project's
-`NEXT_PUBLIC_API_URL` to the backend's public origin (for example,
-`https://your-api.vercel.app`), then redeploy both projects. The backend must
-respond successfully at `/health`. The current deployment domains are used as
-production defaults; environment variables override them.
-Preview deployment origins from this dashboard project are also accepted.
+`backend`. Set the frontend project's `NEXT_PUBLIC_API_URL` to the backend's
+public origin (for example, `https://your-api.vercel.app`), then redeploy both
+projects. The backend must respond successfully at `/health`. The current
+deployment domains are used as production defaults; environment variables
+override them.
 
 Vercel's function filesystem is temporary. The API uses `/tmp` for its SQLite
 ledger and signing key there, so audit records are not durable and may differ
 between function instances. Use a persistent database and managed signing key
-before relying on hosted audit history.
+before relying on hosted audit history. CORS allows all origins without
+credentials; this is not authentication, and API routes are publicly
+accessible.
 
 ## Policies and local data
 

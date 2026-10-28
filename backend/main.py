@@ -33,11 +33,7 @@ from models.schemas import (
     Verdict,
 )
 from policy.engine import PolicyEngine, load_rules
-from runtime_config import (
-    default_cors_origin_regex,
-    default_cors_origins,
-    default_data_path,
-)
+from runtime_config import default_data_path
 from scenarios import SCENARIOS, make_tool_call
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -235,8 +231,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="TrustTrace AI", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=default_cors_origins(),
-    allow_origin_regex=default_cors_origin_regex(),
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],

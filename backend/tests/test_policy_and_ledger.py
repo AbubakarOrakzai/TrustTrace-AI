@@ -27,17 +27,6 @@ def test_vercel_defaults_writable_state_to_tmp(monkeypatch) -> None:
     )
 
 
-def test_vercel_defaults_cors_to_deployed_dashboard(monkeypatch) -> None:
-    monkeypatch.setenv("VERCEL", "1")
-    monkeypatch.delenv("TRUSTTRACE_CORS_ORIGINS", raising=False)
-    from runtime_config import default_cors_origin_regex, default_cors_origins
-
-    assert default_cors_origins() == ["https://trust-trace-ai-jj13.vercel.app"]
-    assert default_cors_origin_regex() == (
-        r"^https://trust-trace-ai-jj13(?:-[a-z0-9-]+)?\.vercel\.app$"
-    )
-
-
 def test_unapproved_destination_with_sensitive_data_is_blocked() -> None:
     call = ToolCall(
         tool_name="send_email",
@@ -153,6 +142,16 @@ def test_api_simulator_execution_and_audit_flow(tmp_path: Path, monkeypatch) -> 
     monkeypatch.setattr(main, "judge", None)
 
     with TestClient(main.app) as client:
+        preflight = client.options(
+            "/v1/scenarios",
+            headers={
+                "Origin": "https://any-preview.example",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert preflight.status_code == 200
+        assert preflight.headers["access-control-allow-origin"] == "*"
+
         attack = client.post("/simulate/invoice-exfiltration")
         assert attack.status_code == 200
         assert attack.json()["verdict"]["decision"] == "BLOCK"

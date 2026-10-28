@@ -5,7 +5,6 @@ services:
     environment:
       TRUSTTRACE_DB_PATH: /data/trusttrace.db
       TRUSTTRACE_KEY_PATH: /data/.trusttrace-signing-key.pem
-      TRUSTTRACE_CORS_ORIGINS: http://localhost:3000
       TRUSTTRACE_JUDGE_PROVIDER: ${TRUSTTRACE_JUDGE_PROVIDER:-none}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
