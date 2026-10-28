@@ -327,6 +327,23 @@ general detection. Adversarial evasion is the main known gap (for example leetsp
 "1gn0re previous instructi0ns" is not caught by the regex rules; it is tracked
 as an expected-failure test) and the reason the optional model judge exists.
 
+## Public dataset evaluation
+
+Run `python backend/evaluate_public_dataset.py` from the repository root. It
+requires internet access to stream the pinned test split of the
+[NeurAlchemy prompt-injection dataset](data/README.md), but evaluates samples
+locally using only the deterministic policy engine. It does not call either
+judge provider, write samples to disk, or add them to the audit ledger.
+
+On the pinned 942-row test split, the policy detected **10 of 552 attacks
+(1.8% recall)** with **0 false positives across 390 benign rows** (42.5%
+accuracy; 3.6% F1). `REVIEW` and `BLOCK` both count as detections. This low
+recall shows the current rules are not a general prompt-injection detector.
+The dataset mixes jailbreak and prompt-injection categories and is not
+tool-call-specific; one row exceeding the 4,000-character context limit was
+truncated. Results are a reproducible external stress test, not a security
+certification.
+
 ## Hackathon integration status
 
 The backend supports an optional judge using the open
@@ -342,9 +359,10 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-26 tests (plus 1 documented expected failure) cover the policy engine, evasion
-and path-traversal cases, ledger integrity and tamper detection, and mocked
-Nebius/Gemini judge and fallback behavior; no network or API key is needed.
+28 tests (plus 1 documented expected failure) cover the policy engine, evasion
+and path-traversal cases, public-dataset evaluator aggregation, ledger integrity
+and tamper detection, and mocked Nebius/Gemini judge and fallback behavior; no
+network or API key is needed.
 
 ## Troubleshooting
 

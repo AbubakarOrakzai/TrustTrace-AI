@@ -67,6 +67,7 @@ export default function Dashboard() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [chain, setChain] = useState<{ valid: boolean; events_verified: number } | null>(null);
+  const [verifyingChain, setVerifyingChain] = useState(false);
   const [scorecard, setScorecard] = useState<Scorecard | null>(null);
 
   const refresh = useCallback(async () => {
@@ -125,12 +126,16 @@ export default function Dashboard() {
   }
 
   async function verifyChain() {
+    setVerifyingChain(true);
+    setChain(null);
     try {
       const response = await fetch(`${API}/v1/audit/verify`);
       if (!response.ok) throw new Error("Verification request failed.");
       setChain(await response.json());
     } catch {
       setMessage("Audit verification failed because the backend is unavailable.");
+    } finally {
+      setVerifyingChain(false);
     }
   }
 
@@ -213,6 +218,15 @@ export default function Dashboard() {
                   : apiHealth.layers.llm_judge === "disabled"
                     ? "LLM judge off · no model calls"
                     : "LLM judge not ready · no model calls"}
+            </div>
+            <div className="quick-audit-status" aria-live="polite">
+              {verifyingChain
+                ? "Verifying audit chain…"
+                : chain
+                  ? chain.valid
+                    ? `✓ Audit valid · ${chain.events_verified} events verified`
+                    : "⚠ Audit chain verification failed"
+                  : ""}
             </div>
           </section>
 
