@@ -394,11 +394,8 @@ sensitive data in this demo.
 
 - [Backend setup and development](backend/README.md)
 - [Dashboard setup](frontend/README.md)
-- [3-minute demo video script](script.md)
-- [Presentation (PDF)](docs/presentation.pdf) · [HTML slides](docs/presentation.html) · [Pitch outline](PITCH.md)
+- [Presentation (PDF)](docs/presentation.pdf) · [HTML slides](docs/presentation.html)
 - [Project site](docs/index.html) (GitHub Pages: set Pages source to `/docs`)
-- [Durable project context](CONTEXT.md)
-- [Session handoff for future contributors/LLMs](SESSION.md)
 
 Team: Haseeb Khan (ML Engineer) and Abu Baker (Frontend Developer).
 
