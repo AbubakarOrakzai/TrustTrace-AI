@@ -130,6 +130,8 @@ def test_api_simulator_execution_and_audit_flow(tmp_path: Path, monkeypatch) -> 
 
     import main
 
+    monkeypatch.setattr(main, "judge", None)
+
     with TestClient(main.app) as client:
         attack = client.post("/simulate/invoice-exfiltration")
         assert attack.status_code == 200
