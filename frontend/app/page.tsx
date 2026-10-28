@@ -57,11 +57,17 @@ type Scorecard = {
   results: Array<{ scenario_id: string; expected: string; actual: string; matched: boolean }>;
 };
 
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
+const configuredApiIsLocal =
+  /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/i.test(
+    configuredApiUrl ?? "",
+  );
 const API =
-  process.env.NEXT_PUBLIC_API_URL ??
-  (process.env.NODE_ENV === "production"
-    ? "https://trust-trace-ai.vercel.app"
-    : "http://localhost:8000");
+  process.env.NODE_ENV === "production"
+    ? !configuredApiUrl || configuredApiIsLocal
+      ? "https://trust-trace-ai.vercel.app"
+      : configuredApiUrl
+    : configuredApiUrl ?? "http://localhost:8000";
 
 function backendUnavailableMessage() {
   const isLocal =
