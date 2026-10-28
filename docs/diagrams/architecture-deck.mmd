@@ -1,0 +1,11 @@
+flowchart LR
+  src[("Poisoned invoice,<br/>ticket or web page")] -.-> llm["AI agent<br/>plans a tool call"]
+  llm == "call + context" ==> schema["L0 strict schema"]
+  subgraph TT["TrustTrace API"]
+    direction LR
+    schema --> policy["L1/L2 policy engine<br/>rules.yaml"] --> judge{{"L3 Gemini judge<br/>optional, tighten-only"}} --> decide{"Risk score"}
+  end
+  decide -- "under 0.4" --> allow["ALLOW<br/>sandbox mock"]
+  decide -- "0.4 to 0.7" --> review["REVIEW<br/>human"]
+  decide -- "0.7 or more" --> block["BLOCK<br/>never runs"]
+  decide -. "every verdict" .-> ledger[("Signed ledger<br/>SHA-256 + Ed25519")]

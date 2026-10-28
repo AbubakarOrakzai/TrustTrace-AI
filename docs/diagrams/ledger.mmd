@@ -1,0 +1,9 @@
+flowchart LR
+  e1["Event 1<br/>payload<br/>hash = SHA-256(payload + genesis)"] --> e2["Event 2<br/>payload<br/>hash = SHA-256(payload + hash 1)"] --> e3["Event 3<br/>payload<br/>hash = SHA-256(payload + hash 2)"]
+  key(["Ed25519 private key<br/>stays local"]) -. "signs each hash" .-> e1
+  key -.-> e2
+  key -.-> e3
+  verify{{"Verify chain<br/>recompute hashes + check signatures"}}
+  e3 --> verify
+  verify --> ok["Valid"]
+  verify --> bad["Edit any event → chain breaks"]

