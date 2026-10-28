@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 
 from audit.ledger import AuditLedger
-from judge.gemini import (
+from judge.providers import (
     GeminiJudge,
     JudgeEvaluation,
     JudgeUnavailableError,

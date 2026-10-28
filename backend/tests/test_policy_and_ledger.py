@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from audit.ledger import AuditLedger
-from judge.gemini import JudgeEvaluation, JudgeResult, JudgeUnavailableError
+from judge.providers import JudgeEvaluation, JudgeResult, JudgeUnavailableError
 from models.schemas import ContextSource, ToolCall, Verdict
 from policy.engine import PolicyEngine
 from scenarios import SCENARIOS, make_tool_call

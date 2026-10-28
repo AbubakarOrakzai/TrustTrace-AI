@@ -5,7 +5,7 @@ import json
 import httpx
 import pytest
 
-from judge.gemini import (
+from judge.providers import (
     NEBIUS_MODEL,
     GeminiJudge,
     JudgeUnavailableError,
@@ -46,7 +46,7 @@ def test_gemini_judge_retries_invalid_json_and_parses_verdict(monkeypatch) -> No
         requests.append((url, kwargs))
         return responses.pop(0)
 
-    monkeypatch.setattr("judge.gemini.httpx.post", fake_post)
+    monkeypatch.setattr("judge.providers.httpx.post", fake_post)
     call = ToolCall(
         tool_name="read_file",
         arguments={"path": "demo/notes.txt"},
@@ -69,7 +69,7 @@ def test_gemini_judge_retries_invalid_json_and_parses_verdict(monkeypatch) -> No
 
 def test_gemini_judge_fails_closed_after_two_invalid_responses(monkeypatch) -> None:
     monkeypatch.setattr(
-        "judge.gemini.httpx.post",
+        "judge.providers.httpx.post",
         lambda *args, **kwargs: _completion("{}"),
     )
     judge = GeminiJudge("test-key")
@@ -107,7 +107,7 @@ def test_nebius_judge_uses_token_factory_model_and_endpoint(monkeypatch) -> None
             )
         )
 
-    monkeypatch.setattr("judge.gemini.httpx.post", fake_post)
+    monkeypatch.setattr("judge.providers.httpx.post", fake_post)
     call = ToolCall(tool_name="read_file", arguments={"path": "demo/notes.txt"})
 
     evaluation = NebiusJudge("test-key").evaluate(call)
@@ -159,7 +159,7 @@ def test_nebius_judge_falls_back_to_gemini_after_provider_failure(monkeypatch) -
             )
         )
 
-    monkeypatch.setattr("judge.gemini.httpx.post", fake_post)
+    monkeypatch.setattr("judge.providers.httpx.post", fake_post)
     judge = NebiusJudge(
         "nebius-test-key",
         fallback=GeminiJudge("gemini-test-key"),
