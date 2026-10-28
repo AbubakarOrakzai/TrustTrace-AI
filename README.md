@@ -1,132 +1,221 @@
 # TrustTrace AI
 
-**The AI Agent Firewall and Auditor** — a local-first demo that inspects agent
-tool calls before they reach sandboxed mock tools, applies deterministic policy,
-and records tamper-evident audit evidence.
+**The AI Agent Firewall and Auditor** — a local demo that checks agent tool
+calls against security policies before allowing them to reach sandboxed mock
+tools, then records the decision in a signed audit ledger.
 
-> This is a hackathon prototype, not a certified compliance product. Its reports
-> provide evidence aligned with SOC 2 / AIUC-1 concepts; they do not establish
-> certification or compliance.
+> **Prototype notice:** This project is for local demonstration, not production
+> security or certified compliance. Reports provide evidence aligned with SOC 2
+> / AIUC-1 concepts; they do not prove certification or compliance.
 
-## What works in this starter
+## Run it
 
-- FastAPI interception API with strict request and per-tool argument validation.
-- Deterministic policies for external destinations, sensitive-data exfiltration,
-  risky SQL, prompt-injection indicators in source context, and bulk CRM changes.
-- Offline scenario simulator, including invoice exfiltration and benign controls.
-- Sandbox-only mock tools. No email, network request, OS command, or real database
-  mutation is performed by a tool.
-- SQLite audit ledger with a SHA-256 hash chain and Ed25519 signatures.
-- Next.js dashboard for running scenarios and inspecting recent verdicts.
-- Local setup and focused backend tests.
+### Easiest: Docker Compose
 
-The LLM judge, NeMo Guardrails, SSE, PDF exports, Docker Compose, and richer
-scorecard are not wired up yet. The MVP does not send data to a hosted model.
-This keeps the initial demo deterministic, offline, and safe.
+Install Docker Engine and Docker Compose, then run these commands from the
+repository directory:
 
-## Architecture
-
-```text
-Dashboard ──HTTP──> FastAPI interceptor
-                         ├─ strict Pydantic validation (L0)
-                         ├─ deterministic policy engine (L1)
-                         ├─ source-context injection indicators (initial L2)
-                         ├─ decision aggregation (no LLM judge in MVP)
-                         ├─ signed SQLite audit ledger
-                         └─ ALLOW only ──> sandboxed mock tool
+```bash
+docker compose up --build
 ```
 
-## Quick start
+Wait until both services are healthy, then open:
 
-Requirements: Python 3.10+ and Node.js 18+.
+- Dashboard: <http://localhost:3000>
+- API and interactive docs: <http://localhost:8000/docs>
+- Health status: <http://localhost:8000/health>
 
-### Backend
+No API key or cloud account is needed. Stop the app with `Ctrl+C`, or run
+`docker compose down` in another terminal. Audit data and its signing key are
+stored in the local Docker volume named `trusttrace-data` and survive a normal
+stop/restart.
+
+To erase that local audit history and key as well as stop the services:
+
+```bash
+docker compose down --volumes
+```
+
+### Run without Docker
+
+Requires Python 3.10+ and Node.js 18+.
+
+Start the backend in one terminal:
 
 ```bash
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements-dev.txt
+pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-Backend API docs: <http://localhost:8000/docs>. The local audit DB is created at
-`backend/trusttrace.db`; the signing key is generated locally at
-`backend/.trusttrace-signing-key.pem`. Keep both local and do not commit them.
-
-### Frontend
-
-In another terminal:
+Start the dashboard in another terminal:
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-Dashboard: <http://localhost:3000>. Set `NEXT_PUBLIC_API_URL` if the backend is
-not at `http://localhost:8000`.
-Copy `frontend/.env.example` to `frontend/.env.local` to configure the API URL.
+Open <http://localhost:3000>. The dashboard uses `http://localhost:8000` by
+default. To use a different backend, set `NEXT_PUBLIC_API_URL` before building
+the frontend; see [`frontend/.env.example`](frontend/.env.example).
 
-## API
+## Use the dashboard
 
-- `GET /health` — backend status and enabled layers.
-- `GET /v1/scenarios` — deterministic demo scenarios.
-- `POST /simulate/{scenario_id}` — replay a fixed tool call through the policy.
-- `POST /v1/intercept` — validate and inspect a `ToolCall`.
-- `POST /v1/execute` — inspect, then execute only an ALLOW verdict using a mock.
-- `GET /v1/traces` and `GET /v1/traces/{id}` — recent audit records.
-- `GET /v1/audit/verify` — verify the hash chain and Ed25519 signatures.
-- `GET /v1/audit/report` — JSON evidence export with an alignment disclaimer.
+1. Select **Run scenario** on a card to send its synthetic tool call to the
+   policy engine. The trace shows the final decision, risk score, findings, and
+   any source-document attribution.
+2. Select **Run full suite** to replay all eight included attack and benign
+   scenarios. Review expected-decision accuracy, attack detection, benign false
+   positives, and policy latency.
+3. In **Latest trace**, inspect the proposed tool arguments and matched policy
+   findings. A `BLOCK` or `REVIEW` decision never reaches a mock tool.
+4. In **Audit ledger**, select **Verify chain** to validate event hashes and
+   signatures, or **Export JSON** to download an evidence report.
 
-Example:
+Included scenarios:
+
+| Scenario | Expected result | What it demonstrates |
+|---|---|---|
+| Invoice Exfiltration | BLOCK | Untrusted invoice context proposes sending payroll-related data externally |
+| SQL Destruction via Support Ticket | BLOCK | A destructive SQL statement is intercepted |
+| CRM Mass Tampering | REVIEW | A bulk CRM change exceeds the review threshold |
+| URL Exfiltration | BLOCK | An unapproved destination and sensitive-data indicator |
+| Injection in Retrieved Context | BLOCK | An instruction in untrusted source context is flagged |
+| Safe Internal Email | ALLOW | Email to an approved internal domain |
+| Safe SQL Read | ALLOW | A read from the mock customer table |
+| Single CRM Note Update | ALLOW | A single-record mock update |
+
+These are deterministic replays, not live LLM-agent runs. Repeated runs append
+more records to the audit ledger.
+
+## Use the API
+
+Interactive request/response examples are available at
+<http://localhost:8000/docs>. Common endpoints:
+
+| Method and path | Purpose |
+|---|---|
+| `GET /health` | Check API and layer status |
+| `GET /v1/scenarios` | List the demo scenarios |
+| `POST /simulate/{scenario_id}` | Replay one scenario and record its verdict |
+| `POST /v1/simulate/run-all` | Replay all scenarios and return a scorecard |
+| `POST /v1/intercept` | Validate and inspect a tool call without executing it |
+| `POST /v1/execute` | Inspect a tool call; execute a sandbox mock only on ALLOW |
+| `GET /v1/traces` | List recent audit events |
+| `GET /v1/traces/{event_id}` | Get one event by ID |
+| `GET /v1/audit/verify` | Verify event hashes and signatures |
+| `GET /v1/audit/report` | Downloadable JSON evidence report |
+
+Run the invoice attack with curl:
 
 ```bash
-curl -s http://localhost:8000/simulate/invoice-exfiltration
+curl -X POST http://localhost:8000/simulate/invoice-exfiltration
 ```
 
-## Demo walkthrough
+Check audit integrity:
 
-1. Start backend and frontend using the commands above.
-2. Open the dashboard and run **Invoice Exfiltration**. It should be BLOCKED:
-   the scenario proposes sending payroll-related data to an unapproved domain.
-3. Run **Safe Internal Email** or **Safe SQL Read**; these are benign controls.
-4. Open **Audit** and verify the signed event chain.
-5. Inspect the event details and JSON evidence export.
+```bash
+curl http://localhost:8000/v1/audit/verify
+```
 
-## Initial 3-minute hackathon presentation
+Inspect the scorecard:
 
-- **Problem (20s):** Agents can turn untrusted document content into harmful
-  tool calls; text-only moderation does not gate the execution boundary.
-- **Hero attack (60s):** Run Invoice Exfiltration and show deterministic block
-  findings before the mock tool can execute.
-- **Controls (40s):** Run safe scenarios to show allowed calls and explain the
-  policy boundary.
-- **Audit (40s):** Verify the local hash/signature chain and export JSON evidence.
-- **Architecture/roadmap (20s):** Explain that this starter is offline and
-  deterministic; live Nebius judging and NeMo rails remain planned work.
+```bash
+curl -X POST http://localhost:8000/v1/simulate/run-all
+```
 
-## Roadmap and known limitations
+Example intercept request:
 
-1. Add configurable Nebius judging with strict structured output, bounded
-   timeouts, and fail-closed behavior after verifying current provider/model docs.
-2. Add NeMo Guardrails as an optional layer that degrades cleanly if unavailable.
-3. Add SSE traces, richer attack scorecard, PDF export, Docker Compose, and CI.
-4. Expand policies and test coverage; review false-positive/negative behavior.
-5. Add a thin framework integration/SDK only after the API stabilizes.
+```bash
+curl -X POST http://localhost:8000/v1/intercept \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "tool_name": "send_email",
+    "arguments": {
+      "recipient": "team@internal.example.com",
+      "subject": "Meeting notes",
+      "body": "The project review is on Thursday."
+    },
+    "user_instruction": "Send the notes to the internal team."
+  }'
+```
 
-The included injection checks are heuristic indicators, not a complete detector.
-This MVP does not claim to detect every prompt injection, guarantee a 95%
-detection rate, or provide production-grade isolation. Do not connect real tools
-or sensitive data to it.
+The tool name and its arguments must match the strict schema. The available
+tools are `send_email`, `query_db`, `update_crm`, `read_file`, and
+`http_request`. Extra argument fields are rejected.
 
-## Team
+## Policies and local data
 
-- Haseeb Khan — Software, ML/DL/CV Engineer & Cloud Engineer.
-- Abu Baker — Frontend Developer.
-- Luqman Khan — ML Engineer
+Edit [`backend/policy/rules.yaml`](backend/policy/rules.yaml) to change the
+allowed email/HTTP domains, sensitive-data patterns, restricted SQL tables, CRM
+bulk threshold, or email rate limit. Restart the backend after editing.
 
-## Handoff for other LLMs
+The API stores audit events in SQLite and creates an Ed25519 signing key on
+first start. Without Docker these files are
+`backend/trusttrace.db` and `backend/.trusttrace-signing-key.pem`; Docker stores
+them in its named data volume. Keep the key private: the ledger's signatures
+cannot be independently verified if the private key is lost.
 
-Read [CONTEXT.md](CONTEXT.md) for durable project decisions and
-[SESSION.md](SESSION.md) for current status and next steps before continuing.
+## What this demo does—and does not do
+
+- Tools use synthetic data and sandbox mocks only. The email tool writes to an
+  in-process fake outbox; the HTTP tool does not make a network request; SQL
+  operates only on an in-memory SQLite database.
+- A policy `ALLOW` permits only that local mock. It does not authorize or perform
+  a real external action.
+- Policy and prompt-injection checks are deterministic heuristics; they can miss
+  attacks or flag benign activity. Do not connect real tools or sensitive data.
+-   The Gemini judge and NVIDIA NeMo Guardrails are disabled by default. Scenario
+  replays remain deterministic and do not call a hosted model. You can optionally
+  enable Gemini judging for `/v1/intercept` and `/v1/execute` requests; when
+  enabled, those tool-call arguments and context excerpts are sent to Google's
+  Gemini API. Do not send sensitive or confidential data.
+- SSE streaming, PDF reports, and production-grade isolation are not
+  implemented.
+
+## Optional Gemini judge
+
+Google's [Gemini API supports the OpenAI-compatible chat completions
+endpoint](https://ai.google.dev/gemini-api/docs/openai). The live judge is
+disabled by default; no key is needed for the scenarios or dashboard demo.
+
+1. Copy the example environment file at the repository root:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit `.env` locally and set `TRUSTTRACE_JUDGE_PROVIDER=gemini` and
+   `GEMINI_API_KEY` to a key from Google AI Studio. Keep `.env` private; it is
+   excluded from Git.
+3. If using Docker Compose, recreate the backend so it receives the setting:
+
+   ```bash
+   docker compose up -d --build backend
+   ```
+
+   For manual backend setup, restart Uvicorn after saving `.env`.
+4. Check `GET /health`; `layers.llm_judge` should report `ready`.
+5. Send a tool call to `POST /v1/intercept` or `/v1/execute`. The verdict and
+   audit event will include the Gemini judge result/model. Deterministic
+   scenario replay (`/simulate/...` and **Run full suite**) intentionally stays
+   offline and repeatable.
+
+Deterministic BLOCK decisions short-circuit the model call and cannot be
+overridden. When the judge is enabled, an unavailable service or invalid result
+fails closed as `BLOCK` with `evaluator_unavailable`. Gemini evaluation sends
+the user instruction, tool arguments, and source excerpts to Google and may
+incur API charges. The model's opinion is not a security guarantee.
+
+## Project and contributor notes
+
+- [Backend setup and development](backend/README.md)
+- [Dashboard setup](frontend/README.md)
+- [Durable project context](CONTEXT.md)
+- [Session handoff for future contributors/LLMs](SESSION.md)
+
+Team: Haseeb Khan (ML Engineer), Abu Baker (Frontend Developer), and Luqman Khan
+(ML Engineer).

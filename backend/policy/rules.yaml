@@ -1,0 +1,20 @@
+version: "1"
+allowed_domains:
+  - internal.example.com
+  - vendors.example.com
+sensitive_patterns:
+  - "(?i)payroll"
+  - "(?i)salary"
+  - "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+  - "\\b(?:\\d[ -]*?){13,19}\\b"
+  - "(?i)customer[_ -]?list"
+injection_patterns:
+  - "(?i)ignore (all )?(previous|prior) instructions"
+  - "(?i)system\\s*:"
+  - "(?i)forward .* to "
+  - "(?i)reveal .*secret"
+restricted_tables:
+  - payroll
+  - employees
+max_crm_updates: 10
+max_outbound_emails_per_minute: 5

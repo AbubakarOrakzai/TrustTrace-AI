@@ -1,0 +1,31 @@
+# TrustTrace Backend
+
+FastAPI service that validates tool-call payloads, applies local deterministic
+policies, records verdicts in a signed SQLite hash chain, and permits ALLOW
+verdicts to reach sandbox-only mock tools.
+
+Run from this directory:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+uvicorn main:app --reload --port 8000
+```
+
+Tests: `pytest -q`. Ruff: `ruff check .`. Type check:
+`mypy`. API docs: <http://localhost:8000/docs>.
+
+From the repository root, Docker Compose starts the full demo with
+`docker compose up --build`; it persists the audit database and signing key in
+the `trusttrace-data` named volume.
+
+All tools are synthetic mocks. In particular, mock `http_request` never sends
+network traffic and mock `send_email` writes only to an in-process list. The
+current policy and source-context checks are heuristic. The Gemini judge is
+optional and disabled by default; NeMo Guardrails is not active. Configure
+`TRUSTTRACE_JUDGE_PROVIDER=gemini` and `GEMINI_API_KEY` in the repository-root
+`.env` file to enable it for `/v1/intercept` and `/v1/execute`. Those requests
+send tool arguments and context excerpts to Google's Gemini API; deterministic
+scenario replay remains offline. See the root README for setup details. Audit
+signing keys and SQLite files are local artifacts and are git-ignored.
