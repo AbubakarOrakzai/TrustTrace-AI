@@ -10,7 +10,7 @@ flowchart LR
     direction TB
     schema["L0 strict schema<br/>5 tools, extra fields rejected"]
     policy["L1/L2 policy engine<br/>domains, sensitive data, SQL,<br/>CRM bulk, path traversal,<br/>injection in context<br/>rules.yaml"]
-    judge{{"L3 Gemini judge · optional<br/>can only tighten a verdict<br/>failure blocks"}}
+    judge{{"L3 Nebius Nemotron → Gemini fallback · optional<br/>can only tighten a verdict<br/>failure blocks"}}
     decide{"Risk score<br/>under 0.4 · 0.4 to 0.7 · 0.7 or more"}
     schema --> policy --> judge --> decide
   end

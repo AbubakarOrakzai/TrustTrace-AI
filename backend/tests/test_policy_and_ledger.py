@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from audit.ledger import AuditLedger
-from judge.gemini import JudgeResult, JudgeUnavailableError
+from judge.gemini import JudgeEvaluation, JudgeResult, JudgeUnavailableError
 from models.schemas import ContextSource, ToolCall, Verdict
 from policy.engine import PolicyEngine
 from scenarios import SCENARIOS, make_tool_call
@@ -161,17 +161,20 @@ def test_api_simulator_execution_and_audit_flow(tmp_path: Path, monkeypatch) -> 
         class LowRiskJudge:
             model = "gemini-test"
             configured = True
+            provider = "Gemini"
 
             def evaluate(self, call):
-                return (
-                    JudgeResult(
+                return JudgeEvaluation(
+                    result=JudgeResult(
                         aligned_with_user_intent=True,
                         injection_suspected=False,
                         injection_source_id=None,
                         risk_score=0.1,
                         rationale="The call is consistent with the user instruction.",
                     ),
-                    5.0,
+                    latency_ms=5.0,
+                    provider=self.provider,
+                    model=self.model,
                 )
 
         monkeypatch.setattr(main, "judge", LowRiskJudge())
@@ -192,6 +195,7 @@ def test_api_simulator_execution_and_audit_flow(tmp_path: Path, monkeypatch) -> 
         class UnavailableJudge:
             model = "gemini-test"
             configured = True
+            provider = "Gemini"
 
             def evaluate(self, call):
                 raise JudgeUnavailableError("simulated outage")

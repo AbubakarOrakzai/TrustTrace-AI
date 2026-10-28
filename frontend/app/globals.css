@@ -29,3 +29,14 @@ button{font:inherit}
 .score-pass b,.score-fail b{margin-left:5px}
 .score-fail{background:#29191d;color:#ff8793}
 @media(max-width:680px){.suite-actions{gap:5px}.suite-actions .section-meta{display:none}.scorecard-stats{grid-template-columns:repeat(2,1fr)}}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#687580;margin-right:7px}
+.error-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff6577;margin-right:7px}
+.demo-guide{display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:14px 20px;align-items:center;margin:-8px 0 20px;padding:15px 17px;border:1px solid #263441;border-radius:6px;background:linear-gradient(110deg,#101820,#0d1219)}
+.guide-copy p{margin:6px 0 0;color:#9aa7b2;font-size:11px;line-height:1.5}
+.guide-actions{display:flex;gap:7px;flex-wrap:wrap}
+.guide-button{background:#121c24;border-color:#2a3d4a;color:#c5d5df;font-size:10px;padding:8px 10px}
+.guide-button:hover{border-color:var(--green);color:#dff8e9}
+.guide-button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.judge-mode{grid-column:1/-1;border-top:1px solid #202b34;padding-top:10px;color:#8b9aa6;font:9px "DM Mono",monospace;letter-spacing:.25px}
+@media(max-width:820px){.demo-guide{grid-template-columns:1fr}.guide-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.judge-mode{grid-column:auto}}
+@media(max-width:520px){.guide-actions{grid-template-columns:1fr}.guide-button{text-align:left}.demo-guide{padding:13px}}

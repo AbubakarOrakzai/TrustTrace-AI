@@ -18,7 +18,9 @@ from pydantic import ValidationError
 from audit.ledger import AuditLedger
 from judge.gemini import (
     GeminiJudge,
+    JudgeEvaluation,
     JudgeUnavailableError,
+    NebiusJudge,
     configured_judge,
 )
 from mock_tools import MockTools
@@ -43,7 +45,7 @@ ledger = AuditLedger(
 )
 policy_engine = PolicyEngine()
 mock_tools = MockTools()
-judge: GeminiJudge | None = configured_judge()
+judge: GeminiJudge | NebiusJudge | None = configured_judge()
 
 
 def policy_version() -> str:
@@ -56,35 +58,53 @@ def inspect_call(call: ToolCall, *, use_judge: bool = True) -> tuple[Verdict, An
     layers = [policy_layer]
     final_risk = policy_layer.risk_score
     decision: Decision = policy_layer.decision
+    evaluation: JudgeEvaluation | None = None
 
     if use_judge and judge is not None and policy_layer.decision != "BLOCK":
         try:
-            judge_result, latency_ms = judge.evaluate(call)
+            evaluation = judge.evaluate(call)
+            judge_result = evaluation.result
+            provider = evaluation.provider
+            findings = []
+            if evaluation.fallback_used:
+                findings.append(
+                    Finding(
+                        rule_id="primary_evaluator_unavailable",
+                        severity="MEDIUM",
+                        message=(
+                            "Nebius Token Factory was unavailable; Gemini evaluated "
+                            "this call instead."
+                        ),
+                    )
+                )
             judge_risk = judge_result.risk_score
             if (
                 not judge_result.aligned_with_user_intent
                 or judge_result.injection_suspected
             ):
                 judge_risk = max(judge_risk, 0.7)
-            judge_findings = []
             if not judge_result.aligned_with_user_intent:
-                judge_findings.append(
+                findings.append(
                     Finding(
                         rule_id="intent_mismatch",
                         severity="HIGH",
                         message=(
-                            "Gemini judged the tool call misaligned with the user "
+                            f"{provider} judged the tool call misaligned with "
+                            "the user "
                             "instruction."
                         ),
                         evidence=judge_result.rationale,
                     )
                 )
             if judge_result.injection_suspected:
-                judge_findings.append(
+                findings.append(
                     Finding(
                         rule_id="judge_injection_suspected",
                         severity="HIGH",
-                        message="Gemini suspected an instruction in untrusted context.",
+                        message=(
+                            f"{provider} suspected an instruction in "
+                            "untrusted context."
+                        ),
                         evidence=judge_result.rationale,
                         source_id=judge_result.injection_source_id,
                     )
@@ -98,11 +118,11 @@ def inspect_call(call: ToolCall, *, use_judge: bool = True) -> tuple[Verdict, An
             )
             layers.append(
                 LayerResult(
-                    layer="L3 Gemini intent judge",
+                    layer=f"L3 {provider} intent judge",
                     decision=judge_decision,
                     risk_score=judge_risk,
-                    findings=judge_findings,
-                    latency_ms=latency_ms,
+                    findings=findings,
+                    latency_ms=evaluation.latency_ms,
                 )
             )
             final_risk = max(final_risk, judge_risk)
@@ -113,7 +133,7 @@ def inspect_call(call: ToolCall, *, use_judge: bool = True) -> tuple[Verdict, An
         except JudgeUnavailableError as error:
             layers.append(
                 LayerResult(
-                    layer="L3 Gemini intent judge",
+                    layer=f"L3 {judge.provider} intent judge",
                     decision="BLOCK",
                     risk_score=1.0,
                     findings=[
@@ -121,7 +141,8 @@ def inspect_call(call: ToolCall, *, use_judge: bool = True) -> tuple[Verdict, An
                             rule_id="evaluator_unavailable",
                             severity="CRITICAL",
                             message=(
-                                "Gemini evaluator is unavailable or returned invalid "
+                                f"{judge.provider} evaluator is unavailable or "
+                                "returned invalid "
                                 "output; the call was blocked."
                             ),
                         )
@@ -154,8 +175,10 @@ def inspect_call(call: ToolCall, *, use_judge: bool = True) -> tuple[Verdict, An
         ],
     )
     model_id = (
-        judge.model
-        if use_judge and judge is not None and len(layers) > 1
+        evaluation.model
+        if evaluation is not None
+        else judge.model
+        if use_judge and judge is not None
         else "deterministic-only"
     )
     event = ledger.append(call, verdict, policy_version(), model_id=model_id)
@@ -181,7 +204,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
                 {
                     "event": "startup",
                     "policy_version": rules.get("version", "unknown"),
-                    "evaluator": judge.model
+                    "evaluator": judge.provider
                     if judge and judge.configured
                     else "deterministic-only",
                 }
@@ -222,6 +245,13 @@ def health() -> dict[str, Any]:
             "llm_judge": judge_status,
             "audit": "ready",
         },
+        "judge_provider": judge.provider if judge else "none",
+        "judge_primary_configured": bool(judge and judge.api_key),
+        "judge_fallback_configured": bool(
+            isinstance(judge, NebiusJudge)
+            and judge.fallback
+            and judge.fallback.configured
+        ),
         "model_id": judge.model if judge and judge.configured else "deterministic-only",
     }
 

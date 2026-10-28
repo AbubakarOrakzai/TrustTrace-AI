@@ -10,6 +10,16 @@ type Scenario = {
   description: string;
 };
 
+type ApiHealth = {
+  status: string;
+  judge_provider: string;
+  layers: {
+    llm_judge: string;
+    [layer: string]: string;
+  };
+  model_id: string;
+};
+
 type Finding = {
   rule_id: string;
   severity: string;
@@ -53,6 +63,7 @@ export default function Dashboard() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [traces, setTraces] = useState<Trace[]>([]);
   const [selected, setSelected] = useState<Trace | null>(null);
+  const [apiHealth, setApiHealth] = useState<ApiHealth | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [chain, setChain] = useState<{ valid: boolean; events_verified: number } | null>(null);
@@ -60,21 +71,22 @@ export default function Dashboard() {
 
   const refresh = useCallback(async () => {
     try {
-      const [scenarioResponse, traceResponse] = await Promise.all([
+      const [scenarioResponse, traceResponse, healthResponse] = await Promise.all([
         fetch(`${API}/v1/scenarios`),
         fetch(`${API}/v1/traces`),
+        fetch(`${API}/health`),
       ]);
-      if (!scenarioResponse.ok || !traceResponse.ok) {
+      if (!scenarioResponse.ok || !traceResponse.ok || !healthResponse.ok) {
         throw new Error("Backend returned an error while loading dashboard data.");
       }
       setScenarios(await scenarioResponse.json());
       const nextTraces: Trace[] = await traceResponse.json();
+      setApiHealth(await healthResponse.json());
       setTraces(nextTraces);
-      setSelected((current) =>
-        current ? nextTraces.find((trace) => trace.event_id === current.event_id) ?? current : null,
-      );
+      setSelected(nextTraces.at(-1) ?? null);
       setMessage("");
     } catch {
+      setApiHealth(null);
       setMessage("Backend unavailable. Start FastAPI at http://localhost:8000.");
     }
   }, []);
@@ -172,7 +184,7 @@ export default function Dashboard() {
       <section className="main">
         <header className="topbar">
           <div><span className="crumb">WORKSPACE</span><span className="slash">/</span> Security overview</div>
-          <div className="top-status"><span className="live-dot" /> API READY <span className="env-pill">LOCAL DEMO</span></div>
+          <div className="top-status"><span className={message ? "error-dot" : apiHealth?.status === "ok" ? "live-dot" : "status-dot"} /> {message ? "API UNAVAILABLE" : apiHealth?.status === "ok" ? "API CONNECTED" : "API CHECKING"} <span className="env-pill">{!apiHealth ? "STATUS UNKNOWN" : apiHealth.layers.llm_judge === "ready" ? apiHealth.judge_provider === "Nebius Token Factory" ? "NEBIUS CONFIGURED" : "GEMINI CONFIGURED" : apiHealth.layers.llm_judge === "disabled" ? "OFFLINE POLICY MODE" : "JUDGE NOT READY"}</span></div>
         </header>
 
         <div className="content" id="overview">
@@ -181,6 +193,28 @@ export default function Dashboard() {
             <button className="button secondary" onClick={() => void refresh()}>↻ <span>Refresh</span></button>
           </div>
           {message && <div className="notice">{message}</div>}
+
+          <section className="demo-guide" aria-label="Judge demo quick start">
+            <div className="guide-copy">
+              <span className="eyebrow">JUDGE QUICKSTART</span>
+              <p>See the core flow in three steps. Replays are deterministic; tools are sandbox mocks.</p>
+            </div>
+            <div className="guide-actions">
+              <button className="button guide-button" disabled={busy} onClick={() => void runScenario("invoice-exfiltration")}>1. Run invoice attack</button>
+              <button className="button guide-button" disabled={busy} onClick={() => void runSuite()}>2. Run full suite</button>
+              <button className="button guide-button" onClick={() => void verifyChain()}>3. Verify audit</button>
+            </div>
+            <div className="judge-mode">
+              <span className={apiHealth?.layers.llm_judge === "ready" ? "live-dot" : "status-dot"} />
+              {!apiHealth
+                ? "Backend status unavailable · judge mode unknown"
+                : apiHealth.layers.llm_judge === "ready"
+                  ? `${apiHealth.judge_provider} configured · ${apiHealth.model_id}`
+                  : apiHealth.layers.llm_judge === "disabled"
+                    ? "LLM judge off · no model calls"
+                    : "LLM judge not ready · no model calls"}
+            </div>
+          </section>
 
           <div className="stats">
             <Stat label="INTERCEPTED" value={traces.length} accent="white" />
@@ -219,7 +253,7 @@ export default function Dashboard() {
 }
 
 function Stat({ label, value, accent }: { label: string; value: number; accent: string }) {
-  return <div className="stat"><div className="stat-label">{label}<span className="stat-dot" /></div><div className={`stat-value ${accent}`}>{value.toString().padStart(2, "0")}</div><div className="stat-foot">SINCE LEDGER START</div></div>;
+  return <div className="stat"><div className="stat-label">{label}<span className="stat-dot" /></div><div className={`stat-value ${accent}`}>{value.toString().padStart(2, "0")}</div><div className="stat-foot">LATEST 100 EVENTS</div></div>;
 }
 
 function TraceDetail({ trace }: { trace: Trace }) {

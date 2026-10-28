@@ -45,7 +45,7 @@ flowchart TB
     direction TB
     schema["L0 strict schema<br/>5 tools, extra fields rejected"]
     policy["L1/L2 policy engine<br/>domains, sensitive data, SQL,<br/>CRM bulk, path traversal,<br/>injection in context<br/>rules.yaml"]
-    judge{{"L3 Gemini judge · optional<br/>can only tighten a verdict<br/>failure blocks"}}
+    judge{{"L3 optional judge<br/>Nebius Nemotron → Gemini fallback<br/>can only tighten; failure blocks"}}
     decide{"Risk score<br/>under 0.4 · 0.4 to 0.7 · 0.7 or more"}
     schema --> policy --> judge --> decide
   end
@@ -78,7 +78,7 @@ sequenceDiagram
   participant Agent as AI agent
   participant API as TrustTrace API
   participant Pol as Policy engine
-  participant Jdg as Gemini judge (optional)
+  participant Jdg as Optional model judge
   participant Led as Signed ledger
   participant Tool as Sandbox mock tool
   participant Dash as Dashboard
@@ -183,7 +183,7 @@ The dashboard's **Judge quickstart** panel walks through the demo:
    scorecard.
 3. **Verify audit** to verify the hash chain and signatures for recorded events.
 
-The header reports whether the backend is connected and whether Gemini is
+The header reports whether the backend is connected and which model provider is
 configured. A configured judge is not a live reachability check; scenario
 replays remain deterministic and do not call an LLM.
 
@@ -299,12 +299,12 @@ cannot be independently verified if the private key is lost.
   a real external action.
 - Policy and prompt-injection checks are deterministic heuristics; they can miss
   attacks or flag benign activity. Do not connect real tools or sensitive data.
-- NVIDIA NeMo Guardrails is **not implemented** (planned). The Gemini judge is
-  disabled by default. Scenario
-  replays remain deterministic and do not call a hosted model. You can optionally
-  enable Gemini judging for `/v1/intercept` and `/v1/execute` requests; when
-  enabled, those tool-call arguments and context excerpts are sent to Google's
-  Gemini API. Do not send sensitive or confidential data.
+- NVIDIA NeMo Guardrails is **not implemented** (planned). The optional model
+  judge is disabled by default. Scenario replays remain deterministic and do
+  not call a hosted model. For `/v1/intercept` and `/v1/execute`, you can enable the
+  NVIDIA Nemotron judge with optional Gemini fallback. Enabling it sends tool
+  arguments and context excerpts to the selected provider(s); do not send
+  sensitive or confidential data.
 - SSE streaming, PDF reports, and production-grade isolation are not
   implemented.
 
@@ -329,11 +329,10 @@ as an expected-failure test) and the reason the optional model judge exists.
 
 ## Hackathon integration status
 
-This checkout demonstrates deterministic local policy and sandboxed mock
-tools, with an optional Gemini judge. It does **not** yet demonstrate a runtime
-integration with Nebius Token Factory or an NVIDIA open-source model. Do not
-present the current demo as satisfying those hackathon requirements until that
-integration is implemented and shown running.
+The backend supports an optional judge using the open
+`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` model (served by Nebius Token Factory). A live request still needs
+to be configured and verified with the user's own API key; do not claim a live
+inference demonstration until it has been run successfully.
 
 ## Run the tests
 
@@ -343,8 +342,9 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-22 tests (plus 1 documented expected failure) cover the policy engine, evasion and path-traversal cases, ledger integrity and tamper detection, and
-the Gemini judge (mocked; no network or key needed).
+26 tests (plus 1 documented expected failure) cover the policy engine, evasion
+and path-traversal cases, ledger integrity and tamper detection, and mocked
+Nebius/Gemini judge and fallback behavior; no network or API key is needed.
 
 ## Troubleshooting
 
@@ -352,7 +352,7 @@ the Gemini judge (mocked; no network or key needed).
 |---|---|
 | Port 3000 or 8000 already in use | Stop the other process, or change the host port in `docker-compose.yml` |
 | Dashboard shows the API as offline | Check <http://localhost:8000/health>; for a custom backend URL rebuild the frontend with `NEXT_PUBLIC_API_URL` |
-| `layers.llm_judge` is not `ready` | Set `TRUSTTRACE_JUDGE_PROVIDER=gemini` and `GEMINI_API_KEY` in `.env`, then recreate the backend |
+| `layers.llm_judge` is not `ready` | Set the provider and corresponding API key in `.env`, then recreate the backend |
 | **Verify chain** fails after deleting the key | Signatures need the original key; reset with `docker compose down --volumes` |
 | Counters are not zero | The ledger persists; reset it as above |
 
@@ -362,39 +362,33 @@ Live agent integration (LangChain / MCP proxy), NeMo Guardrails, SSE trace
 streaming, PDF evidence reports, a human approval queue for `REVIEW`, and
 per-tenant policies.
 
-## Optional Gemini judge
+## Optional Nemotron judge
 
-Google's [Gemini API supports the OpenAI-compatible chat completions
-endpoint](https://ai.google.dev/gemini-api/docs/openai). The live judge is
-disabled by default; no key is needed for the scenarios or dashboard demo.
+The backend supports the NVIDIA Nemotron-3-Nano-30B-A3B public endpoint shown
+in the [Nebius Token Factory model catalog](https://tokenfactory.nebius.com/model-catalog.md).
+No GPU or dedicated endpoint is required. The catalog lists approximately
+$0.06 per million input tokens and $0.24 per million output tokens; check
+current pricing in your account.
 
-1. Copy the example environment file at the repository root:
+1. Copy `.env.example` to `.env` if you have not already.
+2. Set `TRUSTTRACE_JUDGE_PROVIDER=nebius`, then enter your freshly rotated
+   `NEBIUS_API_KEY`. Optionally set `GEMINI_API_KEY` for fallback if Nebius
+   fails. Keep both keys only in the ignored local `.env`, never in Git.
+3. If Token Factory's playground shows a region-specific API base URL for this
+   model, set `NEBIUS_BASE_URL` to that exact URL. Otherwise the documented
+   global endpoint is used.
+4. The default `NEBIUS_MODEL` is
+   `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`.
+5. Recreate the backend with `docker compose up -d --build backend`, then check
+   `GET /health` for `judge_provider: "Nebius Token Factory"` and
+   `layers.llm_judge: "ready"`.
+6. To test real inference, submit one synthetic benign call to
+   `POST /v1/intercept`. Deterministic scenarios intentionally remain offline.
 
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edit `.env` locally and set `TRUSTTRACE_JUDGE_PROVIDER=gemini` and
-   `GEMINI_API_KEY` to a key from Google AI Studio. Keep `.env` private; it is
-   excluded from Git.
-3. If using Docker Compose, recreate the backend so it receives the setting:
-
-   ```bash
-   docker compose up -d --build backend
-   ```
-
-   For manual backend setup, restart Uvicorn after saving `.env`.
-4. Check `GET /health`; `layers.llm_judge` should report `ready`.
-5. Send a tool call to `POST /v1/intercept` or `/v1/execute`. The verdict and
-   audit event will include the Gemini judge result/model. Deterministic
-   scenario replay (`/simulate/...` and **Run full suite**) intentionally stays
-   offline and repeatable.
-
-Deterministic BLOCK decisions short-circuit the model call and cannot be
-overridden. When the judge is enabled, an unavailable service or invalid result
-fails closed as `BLOCK` with `evaluator_unavailable`. Gemini evaluation sends
-the user instruction, tool arguments, and source excerpts to Google and may
-incur API charges. The model's opinion is not a security guarantee.
+Deterministic BLOCKs short-circuit before either model. If Nebius fails and
+Gemini is configured, the same request is sent to Gemini; if both fail, the
+call fails closed. This may incur charges from either provider. Never send real
+sensitive data in this demo.
 
 ## Project and contributor notes
 
@@ -406,8 +400,7 @@ incur API charges. The model's opinion is not a security guarantee.
 - [Durable project context](CONTEXT.md)
 - [Session handoff for future contributors/LLMs](SESSION.md)
 
-Team: Haseeb Khan (ML Engineer), Abu Baker (Frontend Developer), and Luqman Khan
-(ML Engineer).
+Team: Haseeb Khan (ML Engineer) and Abu Baker (Frontend Developer).
 
 ## License
 

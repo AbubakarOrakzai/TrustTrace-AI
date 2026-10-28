@@ -44,7 +44,7 @@ pre.mermaid{background:transparent;text-align:center;padding:0}pre{background:va
     direction TB
     schema[&quot;L0 strict schema&lt;br/&gt;5 tools, extra fields rejected&quot;]
     policy[&quot;L1/L2 policy engine&lt;br/&gt;domains, sensitive data, SQL,&lt;br/&gt;CRM bulk, path traversal,&lt;br/&gt;injection in context&lt;br/&gt;rules.yaml&quot;]
-    judge{{&quot;L3 Gemini judge · optional&lt;br/&gt;can only tighten a verdict&lt;br/&gt;failure blocks&quot;}}
+    judge{{&quot;L3 optional judge · NVIDIA Nemotron-3-Nano-30B-A3B&lt;br/&gt;can only tighten a verdict&lt;br/&gt;failure blocks&quot;}}
     decide{&quot;Risk score&lt;br/&gt;under 0.4 · 0.4 to 0.7 · 0.7 or more&quot;}
     schema --&gt; policy --&gt; judge --&gt; decide
   end
@@ -75,7 +75,7 @@ pre.mermaid{background:transparent;text-align:center;padding:0}pre{background:va
   participant Agent as AI agent
   participant API as TrustTrace API
   participant Pol as Policy engine
-  participant Jdg as Gemini judge (optional)
+  participant Jdg as Optional model judge
   participant Led as Signed ledger
   participant Tool as Sandbox mock tool
   participant Dash as Dashboard
@@ -125,7 +125,7 @@ pre.mermaid{background:transparent;text-align:center;padding:0}pre{background:va
 
 <h2>Honest limits</h2>
 <p>Prototype with synthetic data and sandbox mocks only. Heuristic checks can be evaded or over-trigger. Reports are evidence aligned with SOC 2 / AIUC-1 concepts, not a certification. NeMo Guardrails is not implemented.</p>
-<p class="mut">Team: Haseeb Khan, Abu Baker, Luqman Khan.</p>
+<p class="mut">Team: Haseeb Khan, Abu Baker.</p>
 </main>
 <script type="module">
 import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.esm.min.mjs";
