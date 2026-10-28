@@ -30,9 +30,12 @@ def test_vercel_defaults_writable_state_to_tmp(monkeypatch) -> None:
 def test_vercel_defaults_cors_to_deployed_dashboard(monkeypatch) -> None:
     monkeypatch.setenv("VERCEL", "1")
     monkeypatch.delenv("TRUSTTRACE_CORS_ORIGINS", raising=False)
-    from runtime_config import default_cors_origins
+    from runtime_config import default_cors_origin_regex, default_cors_origins
 
     assert default_cors_origins() == ["https://trust-trace-ai-jj13.vercel.app"]
+    assert default_cors_origin_regex() == (
+        r"^https://trust-trace-ai-jj13(?:-[a-z0-9-]+)?\.vercel\.app$"
+    )
 
 
 def test_unapproved_destination_with_sensitive_data_is_blocked() -> None:

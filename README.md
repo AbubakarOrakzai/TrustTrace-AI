@@ -286,6 +286,7 @@ For separate Vercel projects, set the backend project's Root Directory to
 `https://your-api.vercel.app`), then redeploy both projects. The backend must
 respond successfully at `/health`. The current deployment domains are used as
 production defaults; environment variables override them.
+Preview deployment origins from this dashboard project are also accepted.
 
 Vercel's function filesystem is temporary. The API uses `/tmp` for its SQLite
 ledger and signing key there, so audit records are not durable and may differ
