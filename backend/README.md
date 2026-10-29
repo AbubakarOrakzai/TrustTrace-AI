@@ -36,3 +36,5 @@ in the repository-root `.env` file to enable judging for `/v1/intercept` and
 selected provider; deterministic scenario replay remains offline. See the root
 README for setup details. Audit signing keys and SQLite files are local
 artifacts and are git-ignored.
+
+Cybersecurity contributor: [Diltaj](https://github.com/Diltaj).

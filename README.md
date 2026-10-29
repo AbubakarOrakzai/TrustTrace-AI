@@ -457,3 +457,5 @@ Team: Haseeb Khan (ML Engineer) and Abu Baker (Frontend Developer).
 ## License
 
 MIT; see [LICENSE](LICENSE).
+
+Cybersecurity contributor: [Diltaj](https://github.com/Diltaj).

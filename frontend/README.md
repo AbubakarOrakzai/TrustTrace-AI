@@ -26,3 +26,5 @@ your selection in the browser.
 
 The root `docker-compose.yml` runs the dashboard and API together. Its
 `NEXT_PUBLIC_API_URL` build argument is compiled into the browser bundle.
+
+Cybersecurity contributor: [Diltaj](https://github.com/Diltaj).
