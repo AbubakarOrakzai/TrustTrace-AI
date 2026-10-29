@@ -1,0 +1,29 @@
+SCENE 01 — THE HOOK
+
+An AI agent reads an invoice. Hidden inside is a request to send payroll data
+outside the company. What stops that tool call before it runs?
+
+SCENE 02 — THE BLOCK
+
+TrustTrace inspects proposed actions and their source context. In this
+synthetic demo, it spots sensitive data, an unapproved recipient, and an
+untrusted instruction. Deterministic policy blocks the call. No email is sent.
+
+SCENE 03 — THE HONEST RESULT
+
+Then we tested the limits. In a twelve-row public sample, current rules
+flagged zero of six attacks. That's not a win. It's a clear measure of where
+this prototype needs to improve. The Data Lab uses deterministic checks, not
+a model.
+
+SCENE 04 — THE MODEL PATH
+
+Separately, one synthetic request successfully reached NVIDIA Nemotron Three
+Nano through Nebius Token Factory. The optional model judge can add risk;
+deterministic blocks don't call it. This is one verified request, not a claim
+of broad accuracy.
+
+SCENE 05 — THE CLOSE
+
+TrustTrace checks agent tool calls before execution and records each decision.
+Watch the full demo and explore the project on GitHub.
