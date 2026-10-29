@@ -4,15 +4,15 @@
 <title>TrustTrace AI</title>
 <meta name="description" content="The AI agent firewall and auditor: inspect every tool call before it runs.">
 <style>
-:root{--bg:#0b1020;--fg:#e8ecf5;--mut:#9aa6c4;--card:#141b34;--ok:#3ddc97;--rev:#ffb454;--bad:#ff5d6c;--acc:#6ea8ff}
-@media(prefers-color-scheme:light){:root{--bg:#f6f8fc;--fg:#14192b;--mut:#4d5774;--card:#fff}}
+:root{--bg:#0B1020;--fg:#E6EAF5;--mut:#8B97B5;--card:#121A2F;--raised:#1A2440;--line:#26324F;--ok:#34D399;--rev:#FBBF24;--bad:#F87171;--acc:#22D3EE;--indigo:#6366F1}
+@media(prefers-color-scheme:light){:root{--bg:#F7F9FC;--fg:#0F172A;--mut:#64748B;--card:#fff;--raised:#F1F5F9;--line:#E2E8F0;--ok:#059669;--rev:#D97706;--bad:#DC2626;--acc:#0891B2;--indigo:#4F46E5}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif}
 main{max-width:920px;margin:0 auto;padding:48px 16px}
 h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.1;margin:.2em 0}h2{margin-top:2.4em}
 .mut{color:var(--mut)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-.card{background:var(--card);border-radius:12px;padding:16px;border:1px solid #8884}
+.card{background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--line)}
 .n{font-size:2rem;font-weight:700;color:var(--acc)}
-table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #8884;text-align:left}
+table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left}
 .ALLOW{color:var(--ok)}.REVIEW{color:var(--rev)}.BLOCK{color:var(--bad)}
 pre.mermaid{background:transparent;text-align:center;padding:0}pre{background:var(--card);padding:16px;border-radius:12px;overflow:auto}a{color:var(--acc)}
 </style></head><body><main>
@@ -21,7 +21,12 @@ pre.mermaid{background:transparent;text-align:center;padding:0}pre{background:va
 <p>TrustTrace inspects every proposed tool call, and the untrusted sources behind it, <em>before</em> it runs. Each verdict goes into a signed, tamper-evident ledger.</p>
 <p><a href="https://github.com/Haseebi-khan/TrustTrace-AI">Source on GitHub</a> · <a href="https://github.com/Haseebi-khan/TrustTrace-AI#readme">README</a> · <a href="presentation.pdf">Presentation (PDF)</a></p>
 
-<img src="dashboard.png" alt="TrustTrace dashboard" style="width:100%;border-radius:12px;margin-top:16px">
+<h2>Dashboard</h2>
+<p class="mut">Responsive security workspace with light and dark themes.</p>
+<img src="dashboard.png" alt="TrustTrace security overview" style="width:100%;border-radius:12px;margin-top:16px">
+<div class="grid" style="margin-top:16px">
+<img src="dashboard-scenarios.png" alt="TrustTrace scenario simulator and Public Data Lab" style="width:100%;border-radius:12px">
+<img src="dashboard-data-lab.png" alt="TrustTrace dataset evaluation and audit ledger" style="width:100%;border-radius:12px"></div>
 
 <h2>Results</h2>
 <div class="grid">
@@ -125,7 +130,7 @@ pre.mermaid{background:transparent;text-align:center;padding:0}pre{background:va
 
 <h2>Honest limits</h2>
 <p>Prototype with synthetic data and sandbox mocks only. Heuristic checks can be evaded or over-trigger. Reports are evidence aligned with SOC 2 / AIUC-1 concepts, not a certification. NeMo Guardrails is not implemented.</p>
-<p class="mut">Team: Haseeb Khan, Abu Baker.</p>
+<p class="mut">Team: Haseeb Khan · Abu Baker · <a href="https://github.com/Diltaj">Diltaj (Cybersecurity)</a>.</p>
 </main>
 <script type="module">
 import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.esm.min.mjs";
