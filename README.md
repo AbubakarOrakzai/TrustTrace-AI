@@ -1,8 +1,8 @@
 # TrustTrace AI
 
-**The AI Agent Firewall and Auditor** — a local demo that checks agent tool
-calls against security policies before allowing them to reach sandboxed mock
-tools, then records the decision in a signed audit ledger.
+**The AI Agent Firewall and Auditor** — a responsive demo that checks agent
+tool calls against security policies before allowing them to reach sandboxed
+mock tools, then records the decision in a signed audit ledger.
 
 **AI agents don't just answer questions anymore — they send email, run SQL and
 edit your CRM. One poisoned invoice can steer them into leaking payroll data.
@@ -233,6 +233,7 @@ Common endpoints:
 | `POST /v1/simulate/run-all` | Replay all scenarios and return a scorecard |
 | `POST /v1/intercept` | Validate and inspect a tool call without executing it |
 | `POST /v1/execute` | Inspect a tool call; execute a sandbox mock only on ALLOW |
+| `POST /v1/evaluate/dataset` | Evaluate bounded public labeled text samples; aggregates only, no judge or ledger |
 | `GET /v1/traces` | List recent audit events |
 | `GET /v1/traces/{event_id}` | Get one event by ID |
 | `GET /v1/audit/verify` | Verify event hashes and signatures |
@@ -345,19 +346,19 @@ as an expected-failure test) and the reason the optional model judge exists.
 
 ## Public dataset evaluation
 
-The dashboard's **Public Data Lab** lets you upload a labeled JSON or JSONL
-file and evaluate up to 500 text samples. Each row has `text`, `label` (`1` for
-attack, `0` for benign), and an optional `category`. Select **Download sample
-data** for a JSONL template and **Download agent tool schemas** for the five
-sandbox function definitions.
+The dashboard works on phones and desktop. Its **Public Data Lab** lets you
+upload a labeled JSON or JSONL file and evaluate up to 500 text samples. Each
+row has `text`, `label` (`1` for attack, `0` for benign), and an optional
+`category`. Select **Download sample data** for a JSONL template and
+**Download agent tool schemas** for the five sandbox function definitions.
 
 Uploads are sent to the public Vercel API for in-memory evaluation. The endpoint
 uses only the deterministic policy engine and does not add rows to the audit
 ledger or call a model provider. The response contains aggregate counts and
 metrics, not sample text. Only upload public, non-sensitive data; do not upload
-private, personal, or confidential information. The website is public and the
-API has no user authentication, so anyone can use the bounded evaluation
-endpoint.
+private, personal, or confidential information. Hosted infrastructure may
+process requests. The website is public and the API has no user authentication,
+so anyone can use the bounded evaluation endpoint.
 
 The sample tool schemas describe function-call arguments only; they do not
 provide an agent or connect to real email, databases, files, or HTTP services.
@@ -381,9 +382,10 @@ certification.
 ## Hackathon integration status
 
 The backend supports an optional judge using the open
-`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` model (served by Nebius Token Factory). A live request still needs
-to be configured and verified with the user's own API key; do not claim a live
-inference demonstration until it has been run successfully.
+`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` model (served by Nebius Token Factory).
+The deployed health endpoint reports the judge as configured, but readiness
+does not prove a successful live inference for every request. Do not claim a
+live inference demonstration unless a real request has been verified.
 
 ## Run the tests
 

@@ -12,3 +12,4 @@ backend/.trusttrace-signing-key.pem
 frontend/node_modules/
 frontend/.next/
 frontend/.env.local
+/personal_info/

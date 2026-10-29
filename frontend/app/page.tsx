@@ -13,6 +13,8 @@ type Scenario = {
 type ApiHealth = {
   status: string;
   judge_provider: string;
+  judge_primary_configured: boolean;
+  judge_fallback_configured: boolean;
   layers: {
     llm_judge: string;
     [layer: string]: string;
@@ -103,6 +105,19 @@ function backendUnavailableMessage() {
   }
   const origin = typeof window === "undefined" ? "this site" : window.location.origin;
   return `Backend unavailable. Set NEXT_PUBLIC_API_URL to your public FastAPI URL and allow ${origin} in backend CORS settings.`;
+}
+
+function judgeBadge(health: ApiHealth | null): string {
+  if (!health) return "STATUS UNKNOWN";
+  if (health.layers.llm_judge === "disabled") return "OFFLINE POLICY MODE";
+  if (health.layers.llm_judge !== "ready") return "JUDGE NOT READY";
+  if (health.judge_provider.includes("Nebius")) {
+    return health.judge_fallback_configured
+      ? "NEBIUS + GEMINI FALLBACK"
+      : "NEBIUS CONFIGURED";
+  }
+  if (health.judge_provider.includes("Gemini")) return "GEMINI CONFIGURED";
+  return "JUDGE CONFIGURED";
 }
 
 export default function Dashboard() {
@@ -327,9 +342,12 @@ export default function Dashboard() {
       <aside className="sidebar">
         <div className="brand"><span className="brand-mark">T</span><span>TrustTrace<span className="brand-light"> AI</span></span></div>
         <div className="nav-label">WORKSPACE</div>
-        <a className="nav-item active" href="#overview"><span>◫</span> Overview</a>
-        <a className="nav-item" href="#simulator"><span>⌁</span> Attack simulator</a>
-        <a className="nav-item" href="#audit"><span>⌗</span> Audit ledger</a>
+        <nav className="workspace-nav" aria-label="Workspace">
+          <a className="nav-item active" href="#overview"><span aria-hidden="true">◫</span> Overview</a>
+          <a className="nav-item" href="#simulator"><span aria-hidden="true">⌁</span> Attack simulator</a>
+          <a className="nav-item" href="#dataset-lab"><span aria-hidden="true">▤</span> Data lab</a>
+          <a className="nav-item" href="#audit"><span aria-hidden="true">⌗</span> Audit ledger</a>
+        </nav>
         <div className="sidebar-bottom">
           <div className="system-card">
             <span className="live-dot" /> LOCAL POLICY ENGINE
@@ -342,7 +360,7 @@ export default function Dashboard() {
       <section className="main">
         <header className="topbar">
           <div><span className="crumb">WORKSPACE</span><span className="slash">/</span> Security overview</div>
-          <div className="top-status"><span className={message ? "error-dot" : apiHealth?.status === "ok" ? "live-dot" : "status-dot"} /> {message ? "API UNAVAILABLE" : apiHealth?.status === "ok" ? "API CONNECTED" : "API CHECKING"} <span className="env-pill">{!apiHealth ? "STATUS UNKNOWN" : apiHealth.layers.llm_judge === "ready" ? apiHealth.judge_provider === "Nebius Token Factory" ? "NEBIUS CONFIGURED" : "GEMINI CONFIGURED" : apiHealth.layers.llm_judge === "disabled" ? "OFFLINE POLICY MODE" : "JUDGE NOT READY"}</span></div>
+          <div className="top-status"><span className={message ? "error-dot" : apiHealth?.status === "ok" ? "live-dot" : "status-dot"} /> {message ? "API UNAVAILABLE" : apiHealth?.status === "ok" ? "API CONNECTED" : "API CHECKING"} <span className="env-pill">{judgeBadge(apiHealth)}</span></div>
         </header>
 
         <div className="content" id="overview">
@@ -401,7 +419,7 @@ export default function Dashboard() {
               </article>
             ))}
           </div>
-          <section className="dataset-lab" aria-labelledby="dataset-lab-title">
+          <section className="dataset-lab" id="dataset-lab" aria-labelledby="dataset-lab-title">
             <div className="dataset-lab-heading">
               <div>
                 <span className="eyebrow">PUBLIC DATA LAB</span>

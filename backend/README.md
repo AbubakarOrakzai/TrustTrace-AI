@@ -16,6 +16,12 @@ uvicorn main:app --reload --port 8000
 Tests: `pytest -q`. Ruff: `ruff check .`. Type check:
 `mypy`. API docs: <http://localhost:8000/docs>.
 
+`POST /v1/evaluate/dataset` accepts up to 500 labeled public text samples. It
+uses only the deterministic policy engine and returns aggregate metrics; it
+does not call an LLM judge or add samples to the audit ledger. The public Vercel
+API has no authentication. Do not send private, personal, or confidential
+content to it.
+
 From the repository root, Docker Compose starts the full demo with
 `docker compose up --build`; it persists the audit database and signing key in
 the `trusttrace-data` named volume.
