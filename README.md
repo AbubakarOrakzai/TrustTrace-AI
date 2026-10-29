@@ -449,6 +449,7 @@ sensitive data in this demo.
 
 - [Backend setup and development](backend/README.md)
 - [Dashboard setup](frontend/README.md)
+- [Demo video script](docs/demo-video-script.md)
 - [Presentation (PDF)](docs/presentation.pdf) · [HTML slides](docs/presentation.html)
 - [Project site](docs/index.html) (GitHub Pages: set Pages source to `/docs`)
 
