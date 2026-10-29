@@ -1,8 +1,27 @@
 # TrustTrace AI — Hackathon Demo Video
 
-- **Target length:** approximately 3 minutes 40 seconds
-- **Format:** 1080p screen-led animation with captions and one consistent voice
+- **Target length:** approximately 4 minutes 15 seconds
+- **Format:** 1080p screen-led animation with captions, one consistent voice,
+  and soft ambient music
 - **Output:** `docs/PresentationVideo.mp4`
+
+## ElevenLabs voiceover setup
+
+- Use Daniel — Steady Broadcaster, voice ID `onwK4e9ZLuTAKqWW03F9`, for every
+  chapter, with the same ElevenLabs model and voice settings. See
+  [`elevenlabs-voice-settings.md`](elevenlabs-voice-settings.md).
+- Use a natural, medium pace with a neutral, confident delivery. Avoid an
+  overly dramatic or sales-like read.
+- The copy-ready narration is in
+  [`elevenlabs-voiceover.txt`](elevenlabs-voiceover.txt). Generate each scene
+  separately in ElevenLabs, using the same voice settings for all clips; do
+  not read the scene headings aloud.
+- Mix the voice clearly in front; keep background music soft enough that
+  every word remains easy to understand.
+
+**Pronunciation guide:** Nebius (“NEB-ee-us”); Nemotron (“neh-muh-tron”);
+FastAPI (“fast A-P-I”); SQLite (“S-Q-L-ite”); Ed25519 (“E-D twenty-five,
+five, nineteen”); JSON (“JAY-sun”).
 
 ## Before recording
 
@@ -34,11 +53,12 @@
 reveal the path from an untrusted document to a proposed tool call and a
 pre-execution decision.
 
-**Narration:**
-“An AI agent can read an invoice, then propose an email the user never
+**Voiceover (paste into ElevenLabs):**
+
+An AI agent can read an invoice, then propose an email the user never
 authorized. The risk is not only what the model says. It is what the agent is
 about to do. TrustTrace checks the proposed tool call and its source context
-before execution.”
+before execution.
 
 ### Stop the attack at the boundary
 
@@ -46,11 +66,12 @@ before execution.”
 outside recipient, policy findings, and final BLOCK in that order. Keep the
 complete dashboard visible.
 
-**Narration:**
-“Here, a synthetic invoice asks the agent to forward payroll-related data to
+**Voiceover (paste into ElevenLabs):**
+
+Here, a synthetic invoice asks the agent to forward payroll-related data to
 an outside address. TrustTrace validates the call, checks the destination and
 the untrusted source, then blocks it. This deterministic block never reaches
-the model judge. No email is sent.”
+the model judge. No email is sent.
 
 ### Show the measured scope
 
@@ -58,24 +79,26 @@ the model judge. No email is sent.”
 eight examples, five of five authored attacks flagged, zero of three benign
 calls blocked, about one millisecond local-policy median.
 
-**Narration:**
-“The team-authored suite replays eight examples: five of five attacks are
+**Voiceover (paste into ElevenLabs):**
+
+The team-authored suite replays eight examples: five of five attacks are
 flagged, and none of three benign calls are blocked. These numbers measure a
 small regression suite. They do not show how the rules perform against every
-real-world attack.”
+real-world attack.
 
 ### Be honest about the benchmark
 
 **On screen:** Download and evaluate the pinned public sample. Reveal the
 12-row count, then the current result: zero of six attacks flagged.
 
-**Narration:**
-“The Public Data Lab evaluates a small pinned sample with deterministic rules.
+**Voiceover (paste into ElevenLabs):**
+
+The Public Data Lab evaluates a small pinned sample with deterministic rules.
 In these twelve rows, the current rules flag none of the six attacks. That is
 an important limitation, not a success. This feature uses deterministic
 evaluation, not an external model, and does not add samples to the audit
 ledger. Uploaded rows go to the hosted backend, so use public, non-sensitive
-data only.”
+data only.
 
 ### Explain how it is built
 
@@ -84,12 +107,13 @@ FastAPI endpoint, strict schema and deterministic policy, optional judge, then
 SQLite hash chain with Ed25519 signatures. Reveal ALLOW, REVIEW, and BLOCK
 outcomes last.
 
-**Narration:**
-“The Next.js dashboard presents decisions from a FastAPI backend. Calls pass
+**Voiceover (paste into ElevenLabs):**
+
+The Next.js dashboard presents decisions from a FastAPI backend. Calls pass
 strict schema validation and deterministic policy checks first. An eligible
 call can then use the optional model judge. Decisions are recorded in a
 SQLite hash chain and signed with Ed25519. Even ALLOW reaches only a sandbox
-mock.”
+mock.
 
 ### Verify the real Nemotron path
 
@@ -98,34 +122,37 @@ mock.”
 through policy checks to Nebius and Nemotron. Show the exact model name and
 successful structured response.
 
-**Narration:**
-“Separately, I verified the optional judge with one harmless synthetic
+**Voiceover (paste into ElevenLabs):**
+
+Separately, I verified the optional judge with one harmless synthetic
 request. Nebius Token Factory returned a valid structured response from
 NVIDIA Nemotron 3 Nano. Deterministic blocks still short-circuit before the
 model, and provider errors fail closed. One successful request proves this
-path worked once; it is not a benchmark or an availability guarantee.”
+path worked once; it is not a benchmark or an availability guarantee.
 
 ### Leave verifiable evidence
 
 **On screen:** Select **Verify chain**, animate the event links, then select
 **Export JSON**.
 
-**Narration:**
-“Each tool-call verdict can be checked in the audit ledger. Events are linked
+**Voiceover (paste into ElevenLabs):**
+
+Each tool-call verdict can be checked in the audit ledger. Events are linked
 with SHA-256 hashes and signed with Ed25519. We can verify the chain and
 export a JSON report. Hosted Vercel filesystems are temporary, so hosted audit
-history is not durable.”
+history is not durable.
 
 ### Make the boundary explicit
 
 **On screen:** Reveal the five tool schemas one at a time beside the sandbox
 notice. End on the full dashboard and project link.
 
-**Narration:**
-“The five downloaded schemas describe demo functions; they do not connect to
+**Voiceover (paste into ElevenLabs):**
+
+The five downloaded schemas describe demo functions; they do not connect to
 live services or start an agent. TrustTrace inspects tool calls before
 execution and records each decision. The benchmark also highlights where the
-current rules need improvement.”
+current rules need improvement.
 
 ## Presentation choices
 

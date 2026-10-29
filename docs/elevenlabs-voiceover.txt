@@ -1,0 +1,69 @@
+TRUSTTRACE AI — VOICEOVER
+
+Generate each scene as a separate clip. Use the same voice, model, and settings
+for every scene. The scene labels are for organization only; do not read them.
+
+SCENE 01 — OPENING
+An AI agent can send messages, run SQL, and update customer records. But an
+instruction hidden in an invoice or web page can steer an agent toward an
+action its user never authorized. TrustTrace inspects the proposed tool call
+and its untrusted sources before execution.
+
+SCENE 02 — INVOICE ATTACK
+The synthetic invoice hides an instruction to forward payroll data outside
+the organization. The agent proposes an email that looks ordinary by itself.
+TrustTrace validates the tool schema, then checks the call and its source
+context. It finds sensitive data, an unapproved destination, and an
+instruction from an untrusted source. The deterministic decision is block.
+That block never reaches the optional model judge, and no email is sent.
+
+SCENE 03 — REGRESSION SUITE
+The full suite replays eight team-authored examples. In these examples, five
+of five attacks are flagged, none of the three benign calls are blocked, and
+median local policy latency is about one millisecond. These are regression
+results for a small authored suite, not evidence that the rules catch every
+real-world attack.
+
+SCENE 04 — PUBLIC DATA LAB
+The downloadable public sample contains twelve labeled examples from a pinned
+prompt-injection benchmark, including six attacks. On this sample, the
+current deterministic rules flag none of those six attacks. That is an
+important limitation, not a pass. The lab returns aggregate metrics, does
+not call an external model, and does not add samples to the audit ledger.
+Uploaded rows go to the hosted backend, so use public, non-sensitive data
+only.
+
+SCENE 05 — HOW IT IS BUILT
+The dashboard is built with Next.js, and the API with FastAPI. A proposed
+call first passes strict schema validation, then deterministic policy checks
+for risks such as untrusted instructions and data exfiltration. If it is not
+already blocked, an optional model judge can add risk. The final decision is
+recorded in a SQLite hash chain and signed with Ed25519. Any allowed action
+reaches a sandbox mock, not a live service.
+
+SCENE 06 — NEMOTRON THROUGH NEBIUS
+This is the separate optional judge path, not the Public Data Lab. I verified
+one real inference locally using a harmless synthetic read request. Nebius
+Token Factory returned a valid response from NVIDIA Nemotron three Nano.
+Deterministic blocks still short-circuit before the model, and a model or
+provider error fails closed. This proves that one test worked; it is not a
+benchmark or a guarantee of availability.
+
+SCENE 07 — AUDIT EVIDENCE
+Each tool-call verdict is written to a SQLite ledger. Events extend an
+S-H-A two five six hash chain, and E-D twenty-five five nineteen
+signatures can be checked when we verify the chain. We can also export a
+J-S-O-N report. Hosted Vercel filesystems are temporary, so hosted audit
+history is not durable.
+
+SCENE 08 — SANDBOX TOOLS
+The downloaded schemas describe five demo tools: email, S-Q-L, C-R-M updates,
+file reads, and H-T-T-P requests. They don't start an A-I agent or connect to
+live accounts or services. An allowed verdict only permits a sandbox mock.
+The optional model judge is separate from the deterministic Public Data Lab
+and cannot override a deterministic block.
+
+SCENE 09 — CLOSE
+TrustTrace inspects agent tool calls before execution and records each
+decision. The benchmark we showed also highlights where the current rules
+need improvement.
