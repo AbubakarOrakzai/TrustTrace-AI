@@ -1,105 +1,147 @@
-# TrustTrace AI — Demo Video Script
+# TrustTrace AI — Hackathon Demo Video
 
-**Target length:** 2 minutes 55 seconds
-
-**Format:** Screen recording with voice-over
-
-**Local dashboard:** <http://localhost:3000>
-**Public dashboard:** <https://trust-trace-ai-jj13.vercel.app>
+- **Target length:** approximately 3 minutes 40 seconds
+- **Format:** 1080p screen-led animation with captions and one consistent voice
+- **Output:** `docs/PresentationVideo.mp4`
 
 ## Before recording
 
 - For a local demo, run `docker compose up --build` from the repository root.
-- For a public demo, open the dashboard and check that the API status is online.
-- Use a phone-sized viewport or a real phone to show the responsive layout.
-- For a public-data example, select **Download public benchmark sample** in
-  the Public Data Lab. It contains 12 labeled rows from the pinned public
-  NeurAlchemy dataset, not private or production records. The website sends
-  uploaded rows to its hosted backend. Never upload private, personal, or
-  confidential data.
-- The scenarios use deterministic policy rules and sandbox mock tools. They do
-  not run a live agent, send real email, or make external HTTP requests.
-- Avoid showing API keys, private signing keys, or non-public data.
+- For a public demo, open the dashboard and check that the API is online.
+- Use the real dashboard screenshots supplied in `docs`; fit the entire image
+  inside each frame rather than cropping its edges.
+- For the Public Data Lab, use **Download public benchmark sample**. It has
+  12 labeled rows from the pinned NeurAlchemy sample, not private or production
+  data. Uploaded rows are sent to the hosted backend; use public,
+  non-sensitive data only.
+- Demonstrate the optional model judge separately with an eligible,
+  harmless synthetic request. The successful local test used a benign
+  synthetic file-read request and returned a valid structured result from
+  Nebius Token Factory, model
+  `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`.
+- Do not show credentials or claim this one inference is a benchmark, uptime
+  guarantee, or proof of general model accuracy.
+- Scenario tools are sandbox mocks. No real email, SQL database, CRM, file
+  system, or external HTTP service is called.
+- Keep soft ambient music under the narration, and show the project GitHub
+  URL in a persistent button at the lower-right corner.
 
 ## Script
 
-### 0:00–0:15 — The problem
+### Start with the risk
 
-**On screen:** Show the dashboard, then its mobile navigation.
-
-**Narration:**
-“AI agents can call tools that send messages, run SQL, or update CRMs. An
-instruction hidden in a document can steer an agent toward an action the user
-never authorized. TrustTrace checks proposed tool calls before they reach a
-tool.”
-
-### 0:15–0:40 — A blocked call
-
-**On screen:** Run **Invoice Exfiltration**. Show the BLOCK decision and the
-sensitive-data, unapproved-destination, and untrusted-context findings.
+**On screen:** Fit the real TrustTrace dashboard fully in frame. Progressively
+reveal the path from an untrusted document to a proposed tool call and a
+pre-execution decision.
 
 **Narration:**
-“This synthetic invoice scenario proposes sending payroll-related data to an
-unapproved destination. TrustTrace flags the sensitive-data indicator, the
-destination, and the instruction in untrusted context. It blocks the proposed
-call. No real email is sent.”
+“An AI agent can read an invoice, then propose an email the user never
+authorized. The risk is not only what the model says. It is what the agent is
+about to do. TrustTrace checks the proposed tool call and its source context
+before execution.”
 
-### 0:40–1:00 — The deterministic suite
+### Stop the attack at the boundary
 
-**On screen:** Select **Run full suite** and show the scorecard.
-
-**Narration:**
-“The full suite replays eight team-authored examples. Its scorecard measures
-results against those examples. This is a regression check, not evidence that
-the rules catch every real-world attack.”
-
-### 1:00–1:40 — Public Data Lab
-
-**On screen:** Select **Download public benchmark sample**, upload the file,
-and select **Run local-policy evaluation**. Show the aggregate metrics and
-briefly show the `text`, `label` (`1` for attack, `0` for benign), and
-`category` fields.
+**On screen:** Run **Invoice Exfiltration**. Reveal the hidden instruction,
+outside recipient, policy findings, and final BLOCK in that order. Keep the
+complete dashboard visible.
 
 **Narration:**
-“This downloadable sample contains 12 labeled examples from a pinned public
-prompt-injection benchmark. The Public Data Lab evaluates the text with
-deterministic rules and reports aggregate metrics. The website sends the
-selected rows to its hosted backend. Evaluation does not call Nebius or Gemini
-and does not add samples to the audit ledger. In this example, the current
-rules flag none of the six attacks. This small sample is only for trying the
-feature; its results are not a general security guarantee.”
+“Here, a synthetic invoice asks the agent to forward payroll-related data to
+an outside address. TrustTrace validates the call, checks the destination and
+the untrusted source, then blocks it. This deterministic block never reaches
+the model judge. No email is sent.”
 
-### 1:40–2:10 — Audit evidence
+### Show the measured scope
 
-**On screen:** Select **Verify chain**, then **Export JSON**.
-
-**Narration:**
-“Tool-call verdicts are recorded in a hash-chained SQLite ledger and signed
-with Ed25519. We can verify the chain and export a JSON report. On Vercel, the
-filesystem is temporary, so hosted audit history is not durable.”
-
-### 2:10–2:40 — What the tool download contains
-
-**On screen:** Select **Download agent tool schemas** and show the sandbox
-notice.
+**On screen:** Select **Run full suite**, then animate the scorecard in:
+eight examples, five of five authored attacks flagged, zero of three benign
+calls blocked, about one millisecond local-policy median.
 
 **Narration:**
-“These downloaded schemas describe function-call arguments for five demo
-tools. They do not run an agent or connect to a real email account, database,
-file system, or HTTP service. An ALLOW decision reaches only a sandbox mock.”
+“The team-authored suite replays eight examples: five of five attacks are
+flagged, and none of three benign calls are blocked. These numbers measure a
+small regression suite. They do not show how the rules perform against every
+real-world attack.”
 
-### 2:40–2:55 — Close
+### Be honest about the benchmark
 
-**On screen:** Return to the dashboard overview.
+**On screen:** Download and evaluate the pinned public sample. Reveal the
+12-row count, then the current result: zero of six attacks flagged.
 
 **Narration:**
-“TrustTrace is a prototype for inspecting agent tool calls, applying policy,
-and recording decisions. Its rules are heuristic and can miss attacks. It is
-not a production security product or a compliance certification.”
+“The Public Data Lab evaluates a small pinned sample with deterministic rules.
+In these twelve rows, the current rules flag none of the six attacks. That is
+an important limitation, not a success. This feature uses deterministic
+evaluation, not an external model, and does not add samples to the audit
+ledger. Uploaded rows go to the hosted backend, so use public, non-sensitive
+data only.”
 
-## Recording notes
+### Explain how it is built
 
-- Do not imply that the examples were generated by a live AI agent.
-- Do not present sample metrics as a general security result.
-- If showing the optional judge status, describe it as configured, not proof
-  of live inference on that request.
+**On screen:** Animate the architecture left to right: Next.js dashboard,
+FastAPI endpoint, strict schema and deterministic policy, optional judge, then
+SQLite hash chain with Ed25519 signatures. Reveal ALLOW, REVIEW, and BLOCK
+outcomes last.
+
+**Narration:**
+“The Next.js dashboard presents decisions from a FastAPI backend. Calls pass
+strict schema validation and deterministic policy checks first. An eligible
+call can then use the optional model judge. Decisions are recorded in a
+SQLite hash chain and signed with Ed25519. Even ALLOW reaches only a sandbox
+mock.”
+
+### Verify the real Nemotron path
+
+**On screen:** Show the Nebius logo and a clearly labeled
+“NVIDIA HACKATHON · PROJECT DEMO” corner label. Animate the synthetic request
+through policy checks to Nebius and Nemotron. Show the exact model name and
+successful structured response.
+
+**Narration:**
+“Separately, I verified the optional judge with one harmless synthetic
+request. Nebius Token Factory returned a valid structured response from
+NVIDIA Nemotron 3 Nano. Deterministic blocks still short-circuit before the
+model, and provider errors fail closed. One successful request proves this
+path worked once; it is not a benchmark or an availability guarantee.”
+
+### Leave verifiable evidence
+
+**On screen:** Select **Verify chain**, animate the event links, then select
+**Export JSON**.
+
+**Narration:**
+“Each tool-call verdict can be checked in the audit ledger. Events are linked
+with SHA-256 hashes and signed with Ed25519. We can verify the chain and
+export a JSON report. Hosted Vercel filesystems are temporary, so hosted audit
+history is not durable.”
+
+### Make the boundary explicit
+
+**On screen:** Reveal the five tool schemas one at a time beside the sandbox
+notice. End on the full dashboard and project link.
+
+**Narration:**
+“The five downloaded schemas describe demo functions; they do not connect to
+live services or start an agent. TrustTrace inspects tool calls before
+execution and records each decision. The benchmark also highlights where the
+current rules need improvement.”
+
+## Presentation choices
+
+- Lead with a concrete, recognizable risk, then show the interception
+  step-by-step. Use one main idea per chapter and reveal evidence only when it
+  is discussed.
+- Keep motion purposeful: use staged highlights and transitions to show
+  sequence or focus, not decoration. Preserve full dashboard screenshots and
+  readable contrast.
+- Use concise on-screen labels, synchronized captions, one consistent
+  medium-paced narrator voice, and a subtle ambient music bed. Keep
+  limitations beside the results they qualify; do not inflate benchmark
+  claims or imply NVIDIA endorsement.
+- These choices follow guidance on purposeful animation, scanning and
+  cognitive load, and video usability:
+  - [NN/g: Animation for Attention and Comprehension](https://www.nngroup.com/articles/animation-usability/)
+  - [NN/g: How Users Read on the Web](https://www.nngroup.com/articles/how-users-read-on-the-web/)
+  - [NN/g: Minimize Cognitive Load](https://www.nngroup.com/articles/minimize-cognitive-load/)
+  - [NN/g: Video Usability](https://www.nngroup.com/articles/video-usability/)
