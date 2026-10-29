@@ -286,11 +286,11 @@ deployment domains are used as production defaults; environment variables
 override them.
 
 Vercel's function filesystem is temporary. The API uses `/tmp` for its SQLite
-ledger and signing key there, so audit records are not durable and may differ
-between function instances. Use a persistent database and managed signing key
-before relying on hosted audit history. CORS allows all origins without
-credentials; this is not authentication, and API routes are publicly
-accessible.
+ledger and signing key there, ignoring local path overrides, so audit records
+are not durable and may differ between function instances. Use a persistent
+database and managed signing key before relying on hosted audit history. CORS
+allows all origins without credentials; this is not authentication, and API
+routes are publicly accessible.
 
 ## Policies and local data
 

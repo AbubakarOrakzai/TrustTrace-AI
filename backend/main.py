@@ -4,7 +4,6 @@ import hashlib
 import json
 import logging
 import math
-import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -33,7 +32,7 @@ from models.schemas import (
     Verdict,
 )
 from policy.engine import PolicyEngine, load_rules
-from runtime_config import default_data_path
+from runtime_config import data_path
 from scenarios import SCENARIOS, make_tool_call
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -42,17 +41,15 @@ BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR.parent / ".env")
 
 ledger = AuditLedger(
-    Path(
-        os.getenv(
-            "TRUSTTRACE_DB_PATH",
-            default_data_path("trusttrace.db", BASE_DIR),
-        )
+    data_path(
+        "TRUSTTRACE_DB_PATH",
+        "trusttrace.db",
+        BASE_DIR,
     ),
-    Path(
-        os.getenv(
-            "TRUSTTRACE_KEY_PATH",
-            default_data_path(".trusttrace-signing-key.pem", BASE_DIR),
-        )
+    data_path(
+        "TRUSTTRACE_KEY_PATH",
+        ".trusttrace-signing-key.pem",
+        BASE_DIR,
     ),
 )
 policy_engine = PolicyEngine()

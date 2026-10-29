@@ -18,13 +18,20 @@ def test_scenario_expected_decisions() -> None:
         assert result.decision == scenario["expected_decision"], scenario_id
 
 
-def test_vercel_defaults_writable_state_to_tmp(monkeypatch) -> None:
+def test_vercel_forces_writable_state_to_tmp(monkeypatch) -> None:
     monkeypatch.setenv("VERCEL", "1")
-    from runtime_config import default_data_path
+    monkeypatch.setenv("TRUSTTRACE_DB_PATH", "backend/trusttrace.db")
+    monkeypatch.setenv("TRUSTTRACE_KEY_PATH", "backend/.trusttrace-signing-key.pem")
+    from runtime_config import data_path
 
-    assert default_data_path("trusttrace.db", Path("/backend")) == Path(
-        "/tmp/trusttrace.db"
+    assert data_path("TRUSTTRACE_DB_PATH", "trusttrace.db", Path("/backend")) == (
+        Path("/tmp/trusttrace.db")
     )
+    assert data_path(
+        "TRUSTTRACE_KEY_PATH",
+        ".trusttrace-signing-key.pem",
+        Path("/backend"),
+    ) == Path("/tmp/.trusttrace-signing-key.pem")
 
 
 def test_unapproved_destination_with_sensitive_data_is_blocked() -> None:
