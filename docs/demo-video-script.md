@@ -29,10 +29,10 @@ five, nineteen”); JSON (“JAY-sun”).
 - For a public demo, open the dashboard and check that the API is online.
 - Use the real dashboard screenshots supplied in `docs`; fit the entire image
   inside each frame rather than cropping its edges.
-- For the Public Data Lab, use **Download public benchmark sample**. It has
-  12 labeled rows from the pinned NeurAlchemy sample, not private or production
-  data. Uploaded rows are sent to the hosted backend; use public,
-  non-sensitive data only.
+- For the Public Data Lab, show **Download public benchmark sample** and
+  **Sample source and license** together. The sample has 12 labeled rows from
+  the pinned NeurAlchemy dataset, not private or production data. Uploaded
+  rows are sent to the hosted backend; use public, non-sensitive data only.
 - Demonstrate the optional model judge separately with an eligible,
   harmless synthetic request. The successful local test used a benign
   synthetic file-read request and returned a valid structured result from
@@ -115,12 +115,12 @@ call can then use the optional model judge. Decisions are recorded in a
 SQLite hash chain and signed with Ed25519. Even ALLOW reaches only a sandbox
 mock.
 
-### Verify the real Nemotron path
+### Verify the Nemotron path
 
-**On screen:** Show the Nebius logo and a clearly labeled
-“NVIDIA HACKATHON · PROJECT DEMO” corner label. Animate the synthetic request
-through policy checks to Nebius and Nemotron. Show the exact model name and
-successful structured response.
+**On screen:** Animate the synthetic request through policy checks to Nebius
+and Nemotron. Show the exact model name and successful structured response.
+Keep the visible clarification: “Independent project · Not sponsored or
+endorsed by NVIDIA or Nebius.”
 
 **Voiceover (paste into ElevenLabs):**
 
@@ -165,7 +165,8 @@ current rules need improvement.
 - Use concise on-screen labels, synchronized captions, one consistent
   medium-paced narrator voice, and a subtle ambient music bed. Keep
   limitations beside the results they qualify; do not inflate benchmark
-  claims or imply NVIDIA endorsement.
+  claims or imply NVIDIA or Nebius endorsement. Keep the independent-project
+  clarification visible throughout the videos.
 - These choices follow guidance on purposeful animation, scanning and
   cognitive load, and video usability:
   - [NN/g: Animation for Attention and Comprehension](https://www.nngroup.com/articles/animation-usability/)

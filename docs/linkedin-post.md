@@ -27,6 +27,9 @@ The project is a prototype: its tools are sandbox mocks, and the benchmark
 results are not a security guarantee. I’m sharing the work to get feedback
 and keep improving how agent actions are checked before execution.
 
+This is an independent project; it is not sponsored or endorsed by NVIDIA or
+Nebius.
+
 🎥 Watch the attached project demo.
 
 Project: https://github.com/Haseebi-khan/TrustTrace-AI

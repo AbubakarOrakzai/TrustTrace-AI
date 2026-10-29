@@ -472,10 +472,16 @@ the MIT license.
 - [Backend setup and development](backend/README.md)
 - [Dashboard setup](frontend/README.md)
 - [Demo video script](docs/demo-video-script.md)
+- [Presentation video](docs/PresentationVideo.mp4) · [ZIP download](docs/PresentationVideo.zip)
+- [LinkedIn video (landscape)](docs/LinkedInVideo.mp4) · [vertical 1080×1920](docs/LinkedInVideo-Vertical-1080x1920.mp4)
+- [LinkedIn post copy](docs/linkedin-post.md) · [short-video description](docs/linkedin-video-description.md)
 - [Nemotron model license notice](LICENSES/NVIDIA-NEMOTRON-NOTICE.md)
 - [Latest GitHub release](https://github.com/Haseebi-khan/TrustTrace-AI/releases/latest)
 - [Presentation (PDF)](docs/presentation.pdf) · [HTML slides](docs/presentation.html)
 - [Project site](docs/index.html) (GitHub Pages: set Pages source to `/docs`)
+
+The videos are independent project demonstrations and are not sponsored or
+endorsed by NVIDIA or Nebius.
 
 Team: Haseeb Khan (ML Engineer) and Abu Baker (Frontend Developer).
 
