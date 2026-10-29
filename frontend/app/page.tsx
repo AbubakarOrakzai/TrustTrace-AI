@@ -509,7 +509,10 @@ export default function Dashboard() {
               </div>
               <div className="dataset-downloads">
                 <a className="button secondary" href="/evaluation-sample.jsonl" download>
-                  Download sample data
+                  Download demo sample
+                </a>
+                <a className="button secondary" href="/evaluation-public-benchmark.jsonl" download>
+                  Download public benchmark sample
                 </a>
                 <a className="button secondary" href="/agent-tool-schemas.json" download>
                   Download agent tool schemas
@@ -521,6 +524,14 @@ export default function Dashboard() {
                   rel="noreferrer"
                 >
                   Browse public dataset
+                </a>
+                <a
+                  className="button secondary"
+                  href="https://github.com/Haseebi-khan/TrustTrace-AI/blob/main/data/README.md"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Sample source and license
                 </a>
               </div>
             </div>

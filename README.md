@@ -359,8 +359,14 @@ The dashboard works on phones and desktop and supports saved light and dark
 themes, defaulting to your device preference. Its **Public Data Lab** lets you
 upload a labeled JSON or JSONL file and evaluate up to 500 text samples. Each
 row has `text`, `label` (`1` for attack, `0` for benign), and an optional
-`category`. Select **Download sample data** for a JSONL template and
+`category`. Select **Download demo sample** for a JSONL template and
 **Download agent tool schemas** for the five sandbox function definitions.
+The Public Data Lab also provides **Download public benchmark sample**, a
+12-row sample (six attacks and six benign) from the pinned NeurAlchemy dataset
+test split. Its source, Apache-2.0 license, and limitations are documented in
+[`data/README.md`](data/README.md). These are public benchmark examples, not
+private or production records, and the sample does not predict general
+real-world detection performance.
 
 Uploads are sent to the public Vercel API for in-memory evaluation. The endpoint
 uses only the deterministic policy engine and does not add rows to the audit
@@ -454,11 +460,20 @@ Gemini is configured, the same request is sent to Gemini; if both fail, the
 call fails closed. This may incur charges from either provider. Never send real
 sensitive data in this demo.
 
+The model is governed by NVIDIA's separate [Open Model License
+Agreement](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/)
+and [Trustworthy AI terms](https://www.nvidia.com/en-us/agreements/trustworthy-ai/terms/);
+see the [repository license notice](LICENSES/NVIDIA-NEMOTRON-NOTICE.md).
+This repository does not include model weights. The project code remains under
+the MIT license.
+
 ## Project and contributor notes
 
 - [Backend setup and development](backend/README.md)
 - [Dashboard setup](frontend/README.md)
 - [Demo video script](docs/demo-video-script.md)
+- [Nemotron model license notice](LICENSES/NVIDIA-NEMOTRON-NOTICE.md)
+- [Latest GitHub release](https://github.com/Haseebi-khan/TrustTrace-AI/releases/latest)
 - [Presentation (PDF)](docs/presentation.pdf) · [HTML slides](docs/presentation.html)
 - [Project site](docs/index.html) (GitHub Pages: set Pages source to `/docs`)
 
@@ -466,6 +481,10 @@ Team: Haseeb Khan (ML Engineer) and Abu Baker (Frontend Developer).
 
 ## License
 
-MIT; see [LICENSE](LICENSE).
+Project code is MIT; see [LICENSE](LICENSE). The bundled public benchmark
+sample is separately licensed under Apache-2.0; see
+[`data/LICENSE-2.0.txt`](data/LICENSE-2.0.txt). The optional Nemotron model has
+separate NVIDIA terms documented in
+[`LICENSES/NVIDIA-NEMOTRON-NOTICE.md`](LICENSES/NVIDIA-NEMOTRON-NOTICE.md).
 
 Cybersecurity contributor: [Diltaj](https://github.com/Diltaj).

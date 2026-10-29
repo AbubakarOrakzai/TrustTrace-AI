@@ -12,9 +12,11 @@
 - For a local demo, run `docker compose up --build` from the repository root.
 - For a public demo, open the dashboard and check that the API status is online.
 - Use a phone-sized viewport or a real phone to show the responsive layout.
-- Use the bundled sample in the Public Data Lab. The public site sends uploaded
-  rows to its hosted backend. Never upload private, personal, or confidential
-  data.
+- For a public-data example, select **Download public benchmark sample** in
+  the Public Data Lab. It contains 12 labeled rows from the pinned public
+  NeurAlchemy dataset, not private or production records. The website sends
+  uploaded rows to its hosted backend. Never upload private, personal, or
+  confidential data.
 - The scenarios use deterministic policy rules and sandbox mock tools. They do
   not run a live agent, send real email, or make external HTTP requests.
 - Avoid showing API keys, private signing keys, or non-public data.
@@ -53,17 +55,19 @@ the rules catch every real-world attack.”
 
 ### 1:00–1:40 — Public Data Lab
 
-**On screen:** Select **Download sample data**, upload the sample, and select
-**Run local-policy evaluation**. Show the aggregate metrics and briefly show
-the `text`, `label` (`1` for attack, `0` for benign), and optional `category`
-fields.
+**On screen:** Select **Download public benchmark sample**, upload the file,
+and select **Run local-policy evaluation**. Show the aggregate metrics and
+briefly show the `text`, `label` (`1` for attack, `0` for benign), and
+`category` fields.
 
 **Narration:**
-“The Public Data Lab evaluates labeled text with the deterministic policy
-engine and reports aggregate metrics for the uploaded sample. The website sends
-the selected rows to its hosted backend, so this demo uses only public sample
-data. Evaluation does not call Nebius or Gemini and does not add samples to the
-audit ledger. These results are not a general security guarantee.”
+“This downloadable sample contains 12 labeled examples from a pinned public
+prompt-injection benchmark. The Public Data Lab evaluates the text with
+deterministic rules and reports aggregate metrics. The website sends the
+selected rows to its hosted backend. Evaluation does not call Nebius or Gemini
+and does not add samples to the audit ledger. In this example, the current
+rules flag none of the six attacks. This small sample is only for trying the
+feature; its results are not a general security guarantee.”
 
 ### 1:40–2:10 — Audit evidence
 
