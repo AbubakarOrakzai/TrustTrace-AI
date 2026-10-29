@@ -20,7 +20,7 @@ scenarios; see [Benchmark](#benchmark) for what that does and does not show.
 > security or certified compliance. Reports provide evidence aligned with SOC 2
 > / AIUC-1 concepts; they do not prove certification or compliance.
 
-![TrustTrace dashboard](docs/dashboard.png)
+![TrustTrace security overview dashboard](docs/dashboard.png)
 
 ## The problem
 
@@ -215,6 +215,15 @@ Included scenarios:
 
 These are deterministic replays, not live LLM-agent runs. Repeated runs append
 more records to the audit ledger.
+
+### Dashboard screenshots
+
+The simulator shows the bundled deterministic scenarios and the Public Data
+Lab controls for bounded, public-sample evaluation:
+
+![TrustTrace scenario simulator and Public Data Lab](docs/dashboard-scenarios.png)
+
+![TrustTrace Public Data Lab results and audit ledger](docs/dashboard-data-lab.png)
 
 ## Use the API
 
