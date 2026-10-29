@@ -84,6 +84,46 @@ type DatasetReport = {
   };
 };
 
+type IconName =
+  | "overview"
+  | "simulator"
+  | "dataset"
+  | "audit"
+  | "refresh"
+  | "arrow"
+  | "download"
+  | "sun"
+  | "moon";
+
+function Icon({ name }: { name: IconName }) {
+  const paths: Record<IconName, React.ReactNode> = {
+    overview: <><rect x="3.5" y="3.5" width="7" height="7" rx="1" /><rect x="13.5" y="3.5" width="7" height="7" rx="1" /><rect x="3.5" y="13.5" width="7" height="7" rx="1" /><rect x="13.5" y="13.5" width="7" height="7" rx="1" /></>,
+    simulator: <><path d="M12 3 4.5 13h5l-1 8 7-10h-5z" /></>,
+    dataset: <><path d="M4 19V5m0 14h16" /><path d="M8 16v-4m4 4V8m4 8v-6" /></>,
+    audit: <><path d="M12 3 20 6v5c0 5-3.4 8-8 10-4.6-2-8-5-8-10V6z" /><path d="m8.5 12 2.2 2.2 4.8-4.8" /></>,
+    refresh: <><path d="M20 7v5h-5" /><path d="M19 12a7 7 0 1 0 1 3" /></>,
+    arrow: <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>,
+    download: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></>,
+    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></>,
+    moon: <path d="M20.8 13.1A8.5 8.5 0 0 1 10.9 3.2 8.5 8.5 0 1 0 20.8 13.1Z" />,
+  };
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {paths[name]}
+    </svg>
+  );
+}
+
 const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
 const configuredApiIsLocal =
   /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/i.test(
@@ -135,6 +175,27 @@ export default function Dashboard() {
   const [evaluationMessage, setEvaluationMessage] = useState("");
   const [evaluationBusy, setEvaluationBusy] = useState(false);
   const [datasetReport, setDatasetReport] = useState<DatasetReport | null>(null);
+  const [activeSection, setActiveSection] = useState("overview");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [themeReady, setThemeReady] = useState(false);
+
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("trusttrace-theme");
+    const preferredTheme = window.matchMedia("(prefers-color-scheme: light)").matches
+      ? "light"
+      : "dark";
+    const initialTheme =
+      savedTheme === "light" || savedTheme === "dark" ? savedTheme : preferredTheme;
+    setTheme(initialTheme);
+    document.documentElement.dataset.theme = initialTheme;
+    setThemeReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!themeReady) return;
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("trusttrace-theme", theme);
+  }, [theme, themeReady]);
 
   async function loadEvaluationFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -339,53 +400,70 @@ export default function Dashboard() {
 
   return (
     <main className="shell">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <aside className="sidebar">
         <div className="brand"><span className="brand-mark">T</span><span>TrustTrace<span className="brand-light"> AI</span></span></div>
         <div className="nav-label">WORKSPACE</div>
         <nav className="workspace-nav" aria-label="Workspace">
-          <a className="nav-item active" href="#overview"><span aria-hidden="true">◫</span> Overview</a>
-          <a className="nav-item" href="#simulator"><span aria-hidden="true">⌁</span> Attack simulator</a>
-          <a className="nav-item" href="#dataset-lab"><span aria-hidden="true">▤</span> Data lab</a>
-          <a className="nav-item" href="#audit"><span aria-hidden="true">⌗</span> Audit ledger</a>
+          <a className={`nav-item${activeSection === "overview" ? " active" : ""}`} href="#overview" aria-current={activeSection === "overview" ? "location" : undefined} onClick={() => setActiveSection("overview")}><Icon name="overview" /> Overview</a>
+          <a className={`nav-item${activeSection === "simulator" ? " active" : ""}`} href="#simulator" aria-current={activeSection === "simulator" ? "location" : undefined} onClick={() => setActiveSection("simulator")}><Icon name="simulator" /> Attack simulator</a>
+          <a className={`nav-item${activeSection === "dataset-lab" ? " active" : ""}`} href="#dataset-lab" aria-current={activeSection === "dataset-lab" ? "location" : undefined} onClick={() => setActiveSection("dataset-lab")}><Icon name="dataset" /> Data lab</a>
+          <a className={`nav-item${activeSection === "audit" ? " active" : ""}`} href="#audit" aria-current={activeSection === "audit" ? "location" : undefined} onClick={() => setActiveSection("audit")}><Icon name="audit" /> Audit ledger</a>
         </nav>
         <div className="sidebar-bottom">
           <div className="system-card">
-            <span className="live-dot" /> LOCAL POLICY ENGINE
-            <p>Deterministic mode · offline</p>
+            <span className="system-kicker"><span className="system-indicator" /> DEMO ENVIRONMENT</span>
+            <p>Policy checks run before sandbox tools.</p>
           </div>
-          <div className="owner">HASEEB KHAN <span>PROJECT OWNER</span></div>
+          <div className="owner"><span>TRUSTTRACE AI</span><span>AGENT SECURITY WORKSPACE</span></div>
         </div>
       </aside>
 
-      <section className="main">
+      <section className="main" id="main-content" tabIndex={-1}>
         <header className="topbar">
-          <div><span className="crumb">WORKSPACE</span><span className="slash">/</span> Security overview</div>
-          <div className="top-status"><span className={message ? "error-dot" : apiHealth?.status === "ok" ? "live-dot" : "status-dot"} /> {message ? "API UNAVAILABLE" : apiHealth?.status === "ok" ? "API CONNECTED" : "API CHECKING"} <span className="env-pill">{judgeBadge(apiHealth)}</span></div>
+          <div className="topbar-label"><span className="crumb">TRUSTTRACE</span><span className="slash">/</span> Security workspace</div>
+          <div className="topbar-actions">
+            <div className="top-status" role="status" aria-live="polite">
+              <span className={`status-indicator${message ? " is-error" : apiHealth?.status === "ok" ? " is-ready" : ""}`} />
+              {message ? "API unavailable" : apiHealth?.status === "ok" ? "API connected" : "Connecting to API"}
+              <span className="env-pill">{judgeBadge(apiHealth)}</span>
+            </div>
+            <button
+              className="button secondary theme-toggle"
+              type="button"
+              aria-label={`Current theme: ${theme}. Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+              onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+            >
+              <Icon name={theme === "dark" ? "sun" : "moon"} />
+              <span>{theme === "dark" ? "Light" : "Dark"}</span>
+            </button>
+          </div>
         </header>
 
         <div className="content" id="overview">
           <div className="page-heading">
-            <div><div className="eyebrow">AGENT SECURITY OPERATIONS</div><h1>Overview</h1><p>Inspect tool calls before they reach execution.</p></div>
-            <button className="button secondary" onClick={() => void refresh()}>↻ <span>Refresh</span></button>
+            <div><div className="eyebrow">AGENT SECURITY OPERATIONS</div><h1>Security overview</h1><p>Review tool-call decisions, test policies, and verify your audit trail.</p></div>
+            <button className="button secondary refresh-button" onClick={() => void refresh()} aria-label="Refresh dashboard data"><Icon name="refresh" /><span>Refresh</span></button>
           </div>
-          {message && <div className="notice">{message}</div>}
+          {message && <div className="notice" role="alert">{message}</div>}
 
-          <section className="demo-guide" aria-label="Judge demo quick start">
+          <section className="demo-guide" aria-label="Getting started">
             <div className="guide-copy">
-              <span className="eyebrow">JUDGE QUICKSTART</span>
-              <p>See the core flow in three steps. Replays are deterministic; tools are sandbox mocks.</p>
+              <span className="eyebrow">START HERE</span>
+              <h2>Try the security workflow</h2>
+              <p>Replay a synthetic call, inspect its verdict, then verify the audit trail. No real tools are connected.</p>
             </div>
             <div className="guide-actions">
-              <button className="button guide-button" disabled={busy} onClick={() => void runScenario("invoice-exfiltration")}>1. Run invoice attack</button>
-              <button className="button guide-button" disabled={busy} onClick={() => void runSuite()}>2. Run full suite</button>
-              <button className="button guide-button" onClick={() => void verifyChain()}>3. Verify audit</button>
+              <button className="button guide-button guide-primary" disabled={busy} onClick={() => void runScenario("invoice-exfiltration")}>Simulate invoice attack <Icon name="arrow" /></button>
+              <button className="button guide-button" disabled={busy} onClick={() => void runSuite()}>Run scenario suite <Icon name="arrow" /></button>
+              <button className="button guide-button" disabled={verifyingChain} onClick={() => void verifyChain()}>Verify audit trail <Icon name="arrow" /></button>
             </div>
             <div className="judge-mode">
-              <span className={apiHealth?.layers.llm_judge === "ready" ? "live-dot" : "status-dot"} />
+              <span className={`status-indicator${apiHealth?.layers.llm_judge === "ready" ? " is-ready" : ""}`} />
               {!apiHealth
                 ? "Backend status unavailable · judge mode unknown"
                 : apiHealth.layers.llm_judge === "ready"
-                  ? `${apiHealth.judge_provider} configured · ${apiHealth.model_id}`
+                  ? `Optional judge configured · ${apiHealth.judge_provider} · configuration does not confirm live inference`
                   : apiHealth.layers.llm_judge === "disabled"
                     ? "LLM judge off · no model calls"
                     : "LLM judge not ready · no model calls"}
@@ -401,14 +479,14 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <div className="stats">
-            <Stat label="INTERCEPTED" value={traces.length} accent="white" />
-            <Stat label="BLOCKED" value={counts.BLOCK} accent="red" />
-            <Stat label="NEEDS REVIEW" value={counts.REVIEW} accent="amber" />
-            <Stat label="ALLOWED" value={counts.ALLOW} accent="green" />
-          </div>
+          <section className="stats" aria-label="Recent tool-call decisions">
+            <Stat label="Intercepted" value={traces.length} accent="white" />
+            <Stat label="Blocked" value={counts.BLOCK} accent="red" />
+            <Stat label="Needs review" value={counts.REVIEW} accent="amber" />
+            <Stat label="Allowed" value={counts.ALLOW} accent="green" />
+          </section>
 
-          <div className="section-title" id="simulator"><div><span className="eyebrow">RED-TEAM LAB</span><h2>Attack simulator</h2></div><div className="suite-actions"><span className="section-meta">8 DETERMINISTIC SCENARIOS</span><button className="button secondary" disabled={busy} onClick={() => void runSuite()}>Run full suite <span>→</span></button></div></div>
+          <div className="section-title" id="simulator" tabIndex={-1}><div><span className="eyebrow">POLICY TESTING</span><h2>Scenario simulator</h2></div><div className="suite-actions"><span className="section-meta">8 DETERMINISTIC EXAMPLES</span><button className="button secondary" disabled={busy} onClick={() => void runSuite()}>Run full suite <Icon name="arrow" /></button></div></div>
           <div className="scenario-grid">
             {scenarios.map((scenario) => (
               <article className="scenario-card" key={scenario.id}>
@@ -551,13 +629,13 @@ export default function Dashboard() {
           </section>
           {scorecard && <div className="scorecard"><div className="scorecard-title"><div><span className="eyebrow">DETERMINISTIC REPLAY</span><h3>Suite scorecard</h3></div><span className="badge allow">{Math.round(scorecard.scenario_accuracy * 100)}% EXPECTED DECISIONS</span></div><div className="scorecard-stats"><span>ATTACK DETECTION <b>{Math.round(scorecard.attack_block_rate * 100)}%</b></span><span>BENIGN FALSE POSITIVE <b>{Math.round(scorecard.benign_false_positive_rate * 100)}%</b></span><span>POLICY P50 <b>{scorecard.p50_policy_latency_ms.toFixed(2)} ms</b></span><span>POLICY P95 <b>{scorecard.p95_policy_latency_ms.toFixed(2)} ms</b></span></div><div className="scorecard-list">{scorecard.results.map((result) => <span className={result.matched ? "score-pass" : "score-fail"} key={result.scenario_id}>{result.matched ? "✓" : "×"} {result.scenario_id} <b>{result.actual}</b></span>)}</div></div>}
 
-          <div className="section-title trace-heading"><div><span className="eyebrow">DECISION PIPELINE</span><h2>Latest trace</h2></div><span className="section-meta">{traces.length} RECORDED</span></div>
+          <div className="section-title trace-heading"><div><span className="eyebrow">DECISION PIPELINE</span><h2>Latest trace</h2></div><span className="section-meta">{traces.length} recent {traces.length === 1 ? "event" : "events"}</span></div>
           {selected ? <TraceDetail trace={selected} /> : <div className="empty">Run a scenario to inspect its policy decision and audit proof.</div>}
 
-          <div className="section-title audit-heading" id="audit"><div><span className="eyebrow">TAMPER-EVIDENT RECORD</span><h2>Audit ledger</h2></div></div>
+          <div className="section-title audit-heading" id="audit" tabIndex={-1}><div><span className="eyebrow">TAMPER-EVIDENT RECORD</span><h2>Audit ledger</h2></div></div>
           <div className="audit-panel">
-            <div className="audit-copy"><div className="audit-icon">⌗</div><div><h3>Chain integrity</h3><p>Verify the SHA-256 event chain and Ed25519 signatures.</p>{chain && <div className={chain.valid ? "verify-good" : "verify-bad"}>{chain.valid ? `✓ Valid · ${chain.events_verified} events verified` : "⚠ Chain verification failed"}</div>}</div></div>
-            <div className="audit-actions"><button className="button secondary" onClick={() => void downloadReport()}>↓ Export JSON</button><button className="button primary" onClick={() => void verifyChain()}>Verify chain <span>→</span></button></div>
+            <div className="audit-copy"><div className="audit-icon"><Icon name="audit" /></div><div><h3>Chain integrity</h3><p>Verify the SHA-256 event chain and Ed25519 signatures.</p>{chain && <div className={chain.valid ? "verify-good" : "verify-bad"}>{chain.valid ? `Valid · ${chain.events_verified} events verified` : "Chain verification failed"}</div>}</div></div>
+            <div className="audit-actions"><button className="button secondary" onClick={() => void downloadReport()}><Icon name="download" /> Export JSON</button><button className="button primary" disabled={verifyingChain} onClick={() => void verifyChain()}>Verify chain <Icon name="arrow" /></button></div>
           </div>
 
           <footer>TRUSTTRACE AI <span>·</span> Prototype evidence aligned with SOC 2 / AIUC-1 concepts; not a certification or compliance guarantee.</footer>
@@ -568,7 +646,7 @@ export default function Dashboard() {
 }
 
 function Stat({ label, value, accent }: { label: string; value: number; accent: string }) {
-  return <div className="stat"><div className="stat-label">{label}<span className="stat-dot" /></div><div className={`stat-value ${accent}`}>{value.toString().padStart(2, "0")}</div><div className="stat-foot">LATEST 100 EVENTS</div></div>;
+  return <div className="stat"><div className="stat-label">{label}<span className={`stat-dot ${accent}`} /></div><div className={`stat-value ${accent}`}>{value.toLocaleString()}</div><div className="stat-foot">LAST 100 EVENTS</div></div>;
 }
 
 function TraceDetail({ trace }: { trace: Trace }) {

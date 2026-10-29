@@ -346,7 +346,8 @@ as an expected-failure test) and the reason the optional model judge exists.
 
 ## Public dataset evaluation
 
-The dashboard works on phones and desktop. Its **Public Data Lab** lets you
+The dashboard works on phones and desktop and supports saved light and dark
+themes, defaulting to your device preference. Its **Public Data Lab** lets you
 upload a labeled JSON or JSONL file and evaluate up to 500 text samples. Each
 row has `text`, `label` (`1` for attack, `0` for benign), and an optional
 `category`. Select **Download sample data** for a JSONL template and
