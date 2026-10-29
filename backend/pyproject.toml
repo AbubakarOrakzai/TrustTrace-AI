@@ -18,7 +18,13 @@ dependencies = [
 ]
 
 [tool.setuptools]
-py-modules = ["main", "mock_tools", "scenarios", "runtime_config"]
+py-modules = [
+    "evaluation_api",
+    "main",
+    "mock_tools",
+    "scenarios",
+    "runtime_config",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]

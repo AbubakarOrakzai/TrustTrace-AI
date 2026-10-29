@@ -57,6 +57,31 @@ type Scorecard = {
   results: Array<{ scenario_id: string; expected: string; actual: string; matched: boolean }>;
 };
 
+type EvaluationRow = {
+  text: string;
+  label: 0 | 1;
+  category?: string;
+};
+
+type DatasetReport = {
+  results: {
+    rows: number;
+    truncated_rows: number;
+    binary_metrics: {
+      true_positive: number;
+      false_positive: number;
+      true_negative: number;
+      false_negative: number;
+      accuracy: number;
+      precision: number;
+      recall: number;
+      f1: number;
+      false_positive_rate: number;
+    };
+    decision_counts: Record<"ALLOW" | "REVIEW" | "BLOCK", number>;
+  };
+};
+
 const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
 const configuredApiIsLocal =
   /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/i.test(
@@ -90,6 +115,113 @@ export default function Dashboard() {
   const [chain, setChain] = useState<{ valid: boolean; events_verified: number } | null>(null);
   const [verifyingChain, setVerifyingChain] = useState(false);
   const [scorecard, setScorecard] = useState<Scorecard | null>(null);
+  const [evaluationRows, setEvaluationRows] = useState<EvaluationRow[]>([]);
+  const [evaluationFilename, setEvaluationFilename] = useState("");
+  const [evaluationMessage, setEvaluationMessage] = useState("");
+  const [evaluationBusy, setEvaluationBusy] = useState(false);
+  const [datasetReport, setDatasetReport] = useState<DatasetReport | null>(null);
+
+  async function loadEvaluationFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    setDatasetReport(null);
+    setEvaluationRows([]);
+    setEvaluationFilename("");
+    setEvaluationMessage("");
+    if (!file) return;
+    if (file.size > 2_000_000) {
+      setEvaluationMessage("Choose a file smaller than 2 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      const contents = await file.text();
+      const parsed: unknown = file.name.toLowerCase().endsWith(".jsonl")
+        ? contents
+            .split(/\r?\n/)
+            .filter((line) => line.trim())
+            .map((line, index) => {
+              try {
+                return JSON.parse(line);
+              } catch {
+                throw new Error(`Invalid JSON on line ${index + 1}.`);
+              }
+            })
+        : JSON.parse(contents);
+      const sourceRows = Array.isArray(parsed)
+        ? parsed
+        : parsed && typeof parsed === "object" && "rows" in parsed
+          ? (parsed as { rows: unknown }).rows
+          : null;
+      if (!Array.isArray(sourceRows) || sourceRows.length === 0) {
+        throw new Error("File must contain a non-empty array of labeled rows.");
+      }
+      if (sourceRows.length > 500) {
+        throw new Error("Evaluation is limited to 500 rows per upload.");
+      }
+
+      const rows = sourceRows.map((row, index): EvaluationRow => {
+        if (
+          !row ||
+          typeof row !== "object" ||
+          !("text" in row) ||
+          typeof row.text !== "string" ||
+          row.text.length === 0 ||
+          row.text.length > 8000 ||
+          !("label" in row) ||
+          (row.label !== 0 && row.label !== 1) ||
+          ("category" in row &&
+            (typeof row.category !== "string" || row.category.length > 64))
+        ) {
+          throw new Error(
+            `Row ${index + 1} needs text (1–8,000 characters), label 0 or 1, and an optional short category.`,
+          );
+        }
+        return {
+          text: row.text,
+          label: row.label,
+          category: "category" in row ? row.category : undefined,
+        };
+      });
+      setEvaluationRows(rows);
+      setEvaluationFilename(file.name);
+    } catch (error) {
+      setEvaluationMessage(
+        error instanceof Error ? error.message : "Could not read this file.",
+      );
+      event.target.value = "";
+    }
+  }
+
+  async function runDatasetEvaluation() {
+    setEvaluationBusy(true);
+    setEvaluationMessage("");
+    setDatasetReport(null);
+    try {
+      const response = await fetch(`${API}/v1/evaluate/dataset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows: evaluationRows }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          typeof payload.detail === "string"
+            ? payload.detail
+            : "Evaluation request failed.",
+        );
+      }
+      setDatasetReport(payload as DatasetReport);
+    } catch (error) {
+      setEvaluationMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not reach the evaluation API.",
+      );
+    } finally {
+      setEvaluationBusy(false);
+    }
+  }
 
   const refresh = useCallback(async () => {
     try {
@@ -269,6 +401,136 @@ export default function Dashboard() {
               </article>
             ))}
           </div>
+          <section className="dataset-lab" aria-labelledby="dataset-lab-title">
+            <div className="dataset-lab-heading">
+              <div>
+                <span className="eyebrow">PUBLIC DATA LAB</span>
+                <h2 id="dataset-lab-title">Evaluate labeled text samples</h2>
+                <p>
+                  Test your public prompt-injection examples against the current
+                  deterministic context rules.
+                </p>
+              </div>
+              <div className="dataset-downloads">
+                <a className="button secondary" href="/evaluation-sample.jsonl" download>
+                  Download sample data
+                </a>
+                <a className="button secondary" href="/agent-tool-schemas.json" download>
+                  Download agent tool schemas
+                </a>
+                <a
+                  className="button secondary"
+                  href="https://huggingface.co/datasets/neuralchemy/Prompt-injection-dataset"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Browse public dataset
+                </a>
+              </div>
+            </div>
+            <div className="dataset-warning" role="note">
+              This public website sends the selected rows to its hosted backend.
+              Evaluation uses deterministic rules only—no Nebius/Gemini calls—and
+              the app does not add rows to the audit ledger. Only upload public,
+              non-sensitive data; do not upload private, personal, or confidential
+              information. Hosted platforms may process request data.
+            </div>
+            <div className="dataset-format">
+              Upload JSON or JSONL (one JSON object per line) with{" "}
+              <code>text</code> and <code>label</code> fields. Label{" "}
+              <code>1</code> means attack; <code>0</code> means benign. Optional{" "}
+              <code>category</code> is accepted but not included in the report.
+              Maximum 500 rows, 8,000 characters per row, and 2 MB per file.
+            </div>
+            <div className="dataset-upload">
+              <label className="dataset-file">
+                <span>Select JSON/JSONL file</span>
+                <input
+                  type="file"
+                  accept=".json,.jsonl,application/json"
+                  onChange={(event) => void loadEvaluationFile(event)}
+                />
+              </label>
+              <span className="dataset-file-name" aria-live="polite">
+                {evaluationFilename
+                  ? `${evaluationFilename} · ${evaluationRows.length} rows ready`
+                  : "No file selected"}
+              </span>
+              <button
+                className="button primary"
+                disabled={!evaluationRows.length || evaluationBusy}
+                onClick={() => void runDatasetEvaluation()}
+              >
+                {evaluationBusy ? "Evaluating…" : "Run local-policy evaluation"}
+              </button>
+            </div>
+            {evaluationMessage && (
+              <div className="dataset-message" role="alert">
+                {evaluationMessage}
+              </div>
+            )}
+            {datasetReport && (
+              <div className="dataset-results" aria-live="polite">
+                <div className="dataset-results-heading">
+                  <div>
+                    <span className="eyebrow">AGGREGATE RESULTS</span>
+                    <h3>{datasetReport.results.rows} rows evaluated</h3>
+                  </div>
+                  <span className="badge allow">
+                    {(datasetReport.results.binary_metrics.accuracy * 100).toFixed(1)}%
+                    {" "}ACCURACY
+                  </span>
+                </div>
+                <div className="dataset-metrics">
+                  <span>
+                    ATTACK RECALL
+                    <b>
+                      {(datasetReport.results.binary_metrics.recall * 100).toFixed(1)}%
+                    </b>
+                  </span>
+                  <span>
+                    FALSE POSITIVE RATE
+                    <b>
+                      {(
+                        datasetReport.results.binary_metrics.false_positive_rate *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </b>
+                  </span>
+                  <span>
+                    F1 SCORE
+                    <b>{datasetReport.results.binary_metrics.f1.toFixed(3)}</b>
+                  </span>
+                  <span>
+                    TRUNCATED ROWS
+                    <b>{datasetReport.results.truncated_rows}</b>
+                  </span>
+                </div>
+                <div className="dataset-confusion">
+                  TP {datasetReport.results.binary_metrics.true_positive}
+                  <span>·</span>
+                  FP {datasetReport.results.binary_metrics.false_positive}
+                  <span>·</span>
+                  TN {datasetReport.results.binary_metrics.true_negative}
+                  <span>·</span>
+                  FN {datasetReport.results.binary_metrics.false_negative}
+                  <span>·</span>
+                  ALLOW {datasetReport.results.decision_counts.ALLOW}
+                  <span>·</span>
+                  REVIEW {datasetReport.results.decision_counts.REVIEW}
+                  <span>·</span>
+                  BLOCK {datasetReport.results.decision_counts.BLOCK}
+                </div>
+                <p className="dataset-limit">
+                  REVIEW and BLOCK count as detected. This measures only these
+                  labeled samples and is not a security certification. Samples
+                  are evaluated as untrusted context for a sandbox file-read
+                  call; it does not execute agent tools.
+                </p>
+              </div>
+            )}
+          </section>
           {scorecard && <div className="scorecard"><div className="scorecard-title"><div><span className="eyebrow">DETERMINISTIC REPLAY</span><h3>Suite scorecard</h3></div><span className="badge allow">{Math.round(scorecard.scenario_accuracy * 100)}% EXPECTED DECISIONS</span></div><div className="scorecard-stats"><span>ATTACK DETECTION <b>{Math.round(scorecard.attack_block_rate * 100)}%</b></span><span>BENIGN FALSE POSITIVE <b>{Math.round(scorecard.benign_false_positive_rate * 100)}%</b></span><span>POLICY P50 <b>{scorecard.p50_policy_latency_ms.toFixed(2)} ms</b></span><span>POLICY P95 <b>{scorecard.p95_policy_latency_ms.toFixed(2)} ms</b></span></div><div className="scorecard-list">{scorecard.results.map((result) => <span className={result.matched ? "score-pass" : "score-fail"} key={result.scenario_id}>{result.matched ? "✓" : "×"} {result.scenario_id} <b>{result.actual}</b></span>)}</div></div>}
 
           <div className="section-title trace-heading"><div><span className="eyebrow">DECISION PIPELINE</span><h2>Latest trace</h2></div><span className="section-meta">{traces.length} RECORDED</span></div>

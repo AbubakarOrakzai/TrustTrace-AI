@@ -1,0 +1,100 @@
+{
+  "name": "TrustTrace sandbox tool schemas",
+  "version": "1",
+  "warning": "These are function-calling schemas only. They do not execute actions. TrustTrace demo tools are sandbox mocks; do not connect them to real systems without separate authorization and controls.",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "send_email",
+        "description": "Sandbox email tool. Only sends to the demo in-process mock outbox.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "recipient": {"type": "string", "minLength": 3, "maxLength": 320},
+            "subject": {"type": "string", "maxLength": 500},
+            "body": {"type": "string", "maxLength": 10000}
+          },
+          "required": ["recipient"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "query_db",
+        "description": "Sandbox SQL tool. Queries only an in-memory demo database.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "sql": {"type": "string", "minLength": 1, "maxLength": 10000}
+          },
+          "required": ["sql"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "update_crm",
+        "description": "Sandbox CRM tool. Updates only in-memory demo records.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "updates": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "record_id": {"type": "string", "minLength": 1, "maxLength": 200},
+                  "owner": {"type": ["string", "null"], "maxLength": 200},
+                  "note": {"type": ["string", "null"], "maxLength": 2000}
+                },
+                "required": ["record_id"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["updates"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_file",
+        "description": "Sandbox file tool. Reads only demo files.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {"type": "string", "minLength": 1, "maxLength": 1000}
+          },
+          "required": ["path"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "http_request",
+        "description": "Sandbox HTTP tool. Does not make a network request.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "url": {"type": "string", "minLength": 8, "maxLength": 4000},
+            "method": {"type": "string", "enum": ["GET", "POST", "PUT", "DELETE"]},
+            "body": {"type": "string", "maxLength": 10000}
+          },
+          "required": ["url"],
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

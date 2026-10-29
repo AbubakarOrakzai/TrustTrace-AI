@@ -345,6 +345,24 @@ as an expected-failure test) and the reason the optional model judge exists.
 
 ## Public dataset evaluation
 
+The dashboard's **Public Data Lab** lets you upload a labeled JSON or JSONL
+file and evaluate up to 500 text samples. Each row has `text`, `label` (`1` for
+attack, `0` for benign), and an optional `category`. Select **Download sample
+data** for a JSONL template and **Download agent tool schemas** for the five
+sandbox function definitions.
+
+Uploads are sent to the public Vercel API for in-memory evaluation. The endpoint
+uses only the deterministic policy engine and does not add rows to the audit
+ledger or call a model provider. The response contains aggregate counts and
+metrics, not sample text. Only upload public, non-sensitive data; do not upload
+private, personal, or confidential information. The website is public and the
+API has no user authentication, so anyone can use the bounded evaluation
+endpoint.
+
+The sample tool schemas describe function-call arguments only; they do not
+provide an agent or connect to real email, databases, files, or HTTP services.
+An ALLOW verdict remains limited to the sandbox mock tools.
+
 Run `python backend/evaluate_public_dataset.py` from the repository root. It
 requires internet access to stream the pinned test split of the
 [NeurAlchemy prompt-injection dataset](data/README.md), but evaluates samples
@@ -375,10 +393,10 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-28 tests (plus 1 documented expected failure) cover the policy engine, evasion
-and path-traversal cases, public-dataset evaluator aggregation, ledger integrity
-and tamper detection, and mocked Nebius/Gemini judge and fallback behavior; no
-network or API key is needed.
+33 tests (plus 1 documented expected failure) cover the policy engine, evasion
+and path-traversal cases, public-dataset evaluator and upload endpoint,
+ledger-integrity and tamper-detection, and mocked Nebius/Gemini judge and
+fallback behavior; no network or API key is needed.
 
 ## Troubleshooting
 

@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 
 from audit.ledger import AuditLedger
+from evaluation_api import router as evaluation_router
 from judge.providers import (
     GeminiJudge,
     JudgeEvaluation,
@@ -226,6 +227,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="TrustTrace AI", version="0.1.0", lifespan=lifespan)
+app.include_router(evaluation_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
